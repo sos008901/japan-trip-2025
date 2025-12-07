@@ -491,15 +491,20 @@
                             
                             <!-- Shop Card -->
                             <div v-for="(shop, sIdx) in shoppingList" :key="shop.id" class="bg-white rounded-3xl shadow-sm border border-transparent hover:border-theme-accent/10 transition-all overflow-hidden">
-                                <!-- Shop Header -->
-                                <div class="bg-theme-input/50 px-5 py-3 flex justify-between items-center border-b border-gray-100">
-                                    <h3 class="font-bold text-theme-main font-serif text-lg">{{ shop.shopName }}</h3>
-                                    <button @click="removeShop(shop.id)" class="text-gray-300 hover:text-theme-danger p-1 transition-colors text-xs">
+                                <!-- Shop Header (Clickable for Expand) -->
+                                <div class="bg-theme-input/50 px-5 py-3 flex justify-between items-center border-b border-gray-100 cursor-pointer" @click="toggleShop(shop)">
+                                    <div class="flex items-center gap-3">
+                                         <!-- Toggle Icon -->
+                                         <svg :class="['w-3 h-3 text-gray-400 transition-transform duration-200', shop.expanded ? 'rotate-180' : '']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                         <h3 class="font-bold text-theme-main font-serif text-lg">{{ shop.shopName }}</h3>
+                                    </div>
+                                    <button @click.stop="removeShop(shop.id)" class="text-gray-300 hover:text-theme-danger p-1 transition-colors text-xs">
                                         刪除店家
                                     </button>
                                 </div>
                                 
-                                <div class="p-4">
+                                <!-- Collapsible Content -->
+                                <div class="p-4" v-show="shop.expanded">
                                     <!-- Items List -->
                                     <div class="space-y-2 mb-4">
                                         <div v-if="!shop.items || shop.items.length === 0" class="text-center py-2 text-gray-300 text-[10px]">無商品</div>
@@ -771,7 +776,7 @@
             
             // Notes & Shopping List
             const notes = ref([]); 
-            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [] }]
+            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true }]
             const newShopName = ref('');
             
             const exchangeRate = ref(0.21);
@@ -1040,10 +1045,15 @@ service cloud.firestore {
                              shoppingList.value = [{
                                  id: 'default_migrated',
                                  shopName: '未分類項目',
-                                 items: rawShopping
+                                 items: rawShopping,
+                                 expanded: true
                              }];
                         } else {
-                             shoppingList.value = rawShopping;
+                             // Ensure expanded property exists
+                             shoppingList.value = rawShopping.map(s => ({
+                                 ...s,
+                                 expanded: s.expanded !== undefined ? s.expanded : true
+                             }));
                         }
 
                         startDate.value = d.startDate || ''; 
@@ -1124,12 +1134,7 @@ service cloud.firestore {
             const addDay = () => { days.value.push({ items: [] }); currentDayIndex.value = days.value.length - 1; };
             const confirmDeleteDay = () => days.value.length <= 1 ? showToast('最少保留一天') : triggerConfirm('刪除', `刪除 Day ${currentDayIndex.value+1}?`, () => { days.value.splice(currentDayIndex.value, 1); currentDayIndex.value = Math.min(currentDayIndex.value, days.value.length-1); });
             const confirmDeleteItem = (id) => triggerConfirm('刪除', '確定刪除此行程？', () => days.value[currentDayIndex.value].items = days.value[currentDayIndex.value].items.filter(i => i.id !== id));
-            
-            // Updated: Delete expense and close modal
-            const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => {
-                expenses.value = expenses.value.filter(e => e.id !== id);
-                showExpenseModal.value = false;
-            });
+            const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => expenses.value = expenses.value.filter(e => e.id !== id));
             
             // Modified confirmDeleteNote to close modal
             const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => {
@@ -1231,9 +1236,14 @@ service cloud.firestore {
                     id: Date.now(),
                     shopName: newShopName.value,
                     items: [],
-                    tempItemInput: ''
+                    tempItemInput: '',
+                    expanded: true // Add this
                 });
                 newShopName.value = '';
+            };
+
+            const toggleShop = (shop) => {
+                shop.expanded = !shop.expanded;
             };
 
             const removeShop = (id) => triggerConfirm('刪除店家', '確定刪除此店家及其所有商品？', () => {
@@ -1396,7 +1406,7 @@ service cloud.firestore {
                 isSyncing, permissionError, retryConnection, rulesText, copyRules, // New
                 expandedNoteId, toggleExpandNote, // New for Memo Accordion
                 onMouseDragStart, onMouseDragMove, onMouseDragEnd, // New for Desktop Drag
-                shoppingList, newShopName, addShop, removeShop, addItemToShop, removeItem, toggleItem // New for Shopping List
+                shoppingList, newShopName, addShop, removeShop, addItemToShop, removeItem, toggleItem, toggleShop // New for Shopping List
             };
         }
     }).mount('#app');
