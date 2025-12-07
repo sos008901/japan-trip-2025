@@ -444,11 +444,11 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: MEMO (Modified: Accordion Style) -->
+                <!-- TAB 3: MEMO (Modified: Accordion Style + Structured Shopping List) -->
                 <div v-if="currentTab === 'memo'" class="p-6 animate-fade-in">
-                    <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest border-b pb-4 border-gray-200">筆記</h2>
-                    <div class="grid gap-4 pb-20">
-                        <div v-if="notes.length === 0" class="text-center py-10 text-gray-400 text-xs font-serif">點擊右下角新增筆記</div>
+                    <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest border-b pb-4 border-gray-200">備忘錄</h2>
+                    <div class="space-y-4">
+                        <div v-if="notes.length === 0" class="text-center py-6 text-gray-400 text-xs font-serif">點擊右下角新增筆記</div>
                         
                         <div v-for="note in notes" :key="note.id" 
                              @click.stop="toggleExpandNote(note.id)" 
@@ -469,6 +469,60 @@
                                     <button @click.stop="editNote(note)" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-theme-main hover:text-white rounded-full text-xs font-bold text-gray-500 transition-colors">
                                         <i class="fas fa-pen"></i> 編輯
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shopping List Section (Categorized by Shop) -->
+                    <div class="mt-10 pt-6 border-t border-gray-200">
+                        <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest">購物清單</h2>
+                        
+                        <!-- Add New Shop -->
+                        <div class="flex gap-2 mb-6">
+                            <input v-model="newShopName" @keyup.enter="addShop" placeholder="新增店家名稱..." class="input-rounded !py-3 !rounded-2xl shadow-sm border border-theme-accent/10 focus:border-theme-accent">
+                            <button @click="addShop" class="bg-theme-main text-white w-12 rounded-2xl shadow-lg shadow-theme-main/20 flex items-center justify-center active:scale-95 transition-transform">
+                                <i class="fas fa-store"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-6 pb-20">
+                            <div v-if="shoppingList.length === 0" class="text-center py-4 text-gray-400 text-xs font-serif">尚無購物清單，請先新增店家</div>
+                            
+                            <!-- Shop Card -->
+                            <div v-for="(shop, sIdx) in shoppingList" :key="shop.id" class="bg-white rounded-3xl shadow-sm border border-transparent hover:border-theme-accent/10 transition-all overflow-hidden">
+                                <!-- Shop Header -->
+                                <div class="bg-theme-input/50 px-5 py-3 flex justify-between items-center border-b border-gray-100">
+                                    <h3 class="font-bold text-theme-main font-serif text-lg">{{ shop.shopName }}</h3>
+                                    <button @click="removeShop(shop.id)" class="text-gray-300 hover:text-theme-danger p-1 transition-colors text-xs">
+                                        刪除店家
+                                    </button>
+                                </div>
+                                
+                                <div class="p-4">
+                                    <!-- Items List -->
+                                    <div class="space-y-2 mb-4">
+                                        <div v-if="!shop.items || shop.items.length === 0" class="text-center py-2 text-gray-300 text-[10px]">無商品</div>
+                                        <div v-for="item in shop.items" :key="item.id" class="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-xl transition-colors">
+                                            <div class="flex items-center flex-1 cursor-pointer" @click="toggleItem(shop.id, item)">
+                                                <div :class="['w-5 h-5 rounded-md border-2 flex items-center justify-center mr-3 transition-colors', item.done ? 'bg-theme-accent border-theme-accent' : 'border-gray-300']">
+                                                    <i v-if="item.done" class="fas fa-check text-white text-[10px]"></i>
+                                                </div>
+                                                <span :class="['text-sm font-sans transition-all', item.done ? 'text-gray-300 line-through' : 'text-theme-main']">{{ item.text }}</span>
+                                            </div>
+                                            <button @click="removeItem(shop.id, item.id)" class="text-gray-200 hover:text-theme-danger p-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Add Item Input -->
+                                    <div class="flex gap-2 mt-2">
+                                        <input v-model="shop.tempItemInput" @keyup.enter="addItemToShop(shop)" placeholder="新增商品..." class="w-full bg-gray-50 px-4 py-2 rounded-xl text-sm outline-none focus:bg-white focus:ring-1 focus:ring-theme-accent/50 transition-all">
+                                        <button @click="addItemToShop(shop)" class="text-theme-accent hover:text-theme-main px-2">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -714,7 +768,12 @@
             const days = ref([{ items: [] }]);
             const travelers = ref(['我', '旅伴']);
             const expenses = ref([]);
-            const notes = ref([]);
+            
+            // Notes & Shopping List
+            const notes = ref([]); 
+            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [] }]
+            const newShopName = ref('');
+            
             const exchangeRate = ref(0.21);
             const startDate = ref('');
             const destination = ref('');
@@ -727,7 +786,7 @@
             const toast = ref({ show: false, message: '', type: 'success' });
             const confirmModal = ref({ show: false, title: '', message: '', callback: null });
             const expandedItemId = ref(null);
-            const expandedNoteId = ref(null); // NEW: Track expanded memo
+            const expandedNoteId = ref(null); 
             const expandedDates = ref([]); 
             const editingTravelers = ref([]);
 
@@ -931,6 +990,7 @@ service cloud.firestore {
                         days: JSON.parse(JSON.stringify(days.value)),
                         expenses: JSON.parse(JSON.stringify(expenses.value)),
                         notes: JSON.parse(JSON.stringify(notes.value)),
+                        shoppingList: JSON.parse(JSON.stringify(shoppingList.value)), // Sync Shopping List
                         startDate: startDate.value,
                         destination: destination.value,
                         exchangeRate: exchangeRate.value,
@@ -952,7 +1012,7 @@ service cloud.firestore {
             }, 800);
 
             // B. WATCH for local changes -> Trigger Save
-            watch([days, expenses, notes, startDate, destination, exchangeRate, currencySymbol, travelers], () => {
+            watch([days, expenses, notes, shoppingList, startDate, destination, exchangeRate, currencySymbol, travelers], () => {
                 if (!isRemoteUpdate.value) {
                     saveToCloud();
                 }
@@ -972,6 +1032,20 @@ service cloud.firestore {
                         days.value = d.days || [{items:[]}]; 
                         expenses.value = (d.expenses||[]).map(e => ({...e, beneficiaries: e.beneficiaries || [], type: e.type || 'shared'})); 
                         notes.value = d.notes || []; 
+                        
+                        // Load Shopping List - Handle Backward Compatibility
+                        // If data is flat array (old format), convert to "Uncategorized" shop
+                        let rawShopping = d.shoppingList || [];
+                        if (rawShopping.length > 0 && !rawShopping[0].items && !rawShopping[0].shopName) {
+                             shoppingList.value = [{
+                                 id: 'default_migrated',
+                                 shopName: '未分類項目',
+                                 items: rawShopping
+                             }];
+                        } else {
+                             shoppingList.value = rawShopping;
+                        }
+
                         startDate.value = d.startDate || ''; 
                         destination.value = d.destination || ''; 
                         exchangeRate.value = d.exchangeRate || 0.21; 
@@ -1033,6 +1107,7 @@ service cloud.firestore {
                 days.value = [{ items: [] }];
                 expenses.value = [];
                 notes.value = [];
+                shoppingList.value = [];
                 startDate.value = '';
                 destination.value = '';
                 showWizard.value = true;
@@ -1147,6 +1222,43 @@ service cloud.firestore {
                      notes.value.unshift(newNote); 
                  }
                  showNoteModal.value = false;
+            };
+            
+            // New Shopping List Logic with Shops
+            const addShop = () => {
+                if (!newShopName.value.trim()) return;
+                shoppingList.value.push({
+                    id: Date.now(),
+                    shopName: newShopName.value,
+                    items: [],
+                    tempItemInput: ''
+                });
+                newShopName.value = '';
+            };
+
+            const removeShop = (id) => triggerConfirm('刪除店家', '確定刪除此店家及其所有商品？', () => {
+                shoppingList.value = shoppingList.value.filter(s => s.id !== id);
+            });
+
+            const addItemToShop = (shop) => {
+                if (!shop.tempItemInput || !shop.tempItemInput.trim()) return;
+                shop.items.push({
+                    id: Date.now(),
+                    text: shop.tempItemInput,
+                    done: false
+                });
+                shop.tempItemInput = ''; // Clear individual input
+            };
+
+            const removeItem = (shopId, itemId) => {
+                const shop = shoppingList.value.find(s => s.id === shopId);
+                if (shop) {
+                    shop.items = shop.items.filter(i => i.id !== itemId);
+                }
+            };
+
+            const toggleItem = (shopId, item) => {
+                item.done = !item.done;
             };
             
             const editItem = (item) => { formItem.value = {...item}; [tempHour.value, tempMinute.value] = item.time.split(':'); isEditing.value=true; showItemModal.value=true; };
@@ -1283,7 +1395,8 @@ service cloud.firestore {
                 showTravelerModal, openTravelerModal, editingTravelers, addTraveler, removeTraveler, saveTravelers,
                 isSyncing, permissionError, retryConnection, rulesText, copyRules, // New
                 expandedNoteId, toggleExpandNote, // New for Memo Accordion
-                onMouseDragStart, onMouseDragMove, onMouseDragEnd // New for Desktop Drag
+                onMouseDragStart, onMouseDragMove, onMouseDragEnd, // New for Desktop Drag
+                shoppingList, newShopName, addShop, removeShop, addItemToShop, removeItem, toggleItem // New for Shopping List
             };
         }
     }).mount('#app');
