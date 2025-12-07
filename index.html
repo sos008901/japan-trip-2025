@@ -322,6 +322,14 @@
                                         <div class="flex items-baseline mb-2">
                                             <span class="text-xs font-display font-bold text-theme-accent mr-3">{{ item.time }}</span>
                                             <h3 class="text-lg font-serif font-bold text-theme-main tracking-wide">{{ item.title }}</h3>
+                                            
+                                            <!-- Added Note Indicator (Triangle) -->
+                                            <div v-if="item.note" class="ml-2 self-center">
+                                                 <svg :class="['w-3 h-3 text-gray-300 transition-transform duration-200', expandedItemId === item.id ? 'rotate-180 text-theme-accent' : '']" viewBox="0 0 24 24" fill="currentColor">
+                                                     <path d="M7 10l5 5 5-5z"></path>
+                                                 </svg>
+                                            </div>
+
                                         </div>
                                         <div v-if="item.location" class="flex items-center text-xs text-gray-500 font-sans cursor-pointer hover:text-theme-accent transition" @click.stop="openMap(item.location)">
                                             <svg class="w-3 h-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
