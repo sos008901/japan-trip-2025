@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Travel Assistant (雲端版)</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#F4F2EE">
+
+    <!-- 核心資源 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Cinzel:wght@500;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind 設定 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        display: ['"Cinzel"', '"Noto Serif TC"', 'serif'],
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    colors: {
+                        theme: { 
+                            main: '#2C3032',       // 墨黑
+                            sub: '#5F6368',        // 深灰
+                            accent: '#C5A059',     // 金茶色
+                            bg: '#F4F2EE',         // 生成色
+                            white: '#FFFFFF',
+                            border: '#E0E0E0',
+                            danger: '#A65652',
+                            input: '#F0F2F2'      // 輸入框背景
+                        }
+                    },
+                    boxShadow: { 
+                        float: '0 15px 30px -5px rgba(0, 0, 0, 0.1)',
+                        soft: '0 4px 20px -5px rgba(197, 160, 89, 0.15)',
+                    },
+                    spacing: { 'safe-top': 'env(safe-area-inset-top)', 'safe-bottom': 'env(safe-area-inset-bottom)' },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                        '3xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- CSS -->
+    <style>
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
+        body { background-color: #F4F2EE; color: #2C3032; font-family: 'Noto Serif TC', serif; -webkit-font-smoothing: antialiased; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        input, select, textarea { font-family: 'Noto Sans TC', sans-serif; user-select: text; -webkit-user-select: text; font-size: 16px !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        [v-cloak] { display: none !important; }
+        .bg-washi { background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); }
+
+        #app-container { max-width: 480px; margin: 0 auto; background-color: #F4F2EE; height: 100dvh; overflow: hidden; position: relative; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.1); }
+        .btn-base { display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; cursor: pointer; }
+        .btn-base:active { transform: scale(0.95); }
+        .icon-btn { width: 2.5rem; height: 2.5rem; border-radius: 9999px; border: 1px solid #E0E0E0; background: rgba(255,255,255,0.8); color: #5F6368; }
+        
+        /* 極簡高級感 FAB */
+        .fab-btn { position: absolute; bottom: calc(85px + env(safe-area-inset-bottom)); right: 1.5rem; width: 3.5rem; height: 3.5rem; border-radius: 9999px; background-color: #2C3032; color: #C5A059; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px -5px rgba(44, 48, 50, 0.4); z-index: 999; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.2s; }
+        .fab-btn:active { transform: scale(0.9) rotate(90deg); }
+        
+        .glass-panel { background: rgba(244, 242, 238, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(0,0,0,0.05); }
+        
+        .input-rounded { 
+            width: 100%; 
+            background-color: #F2F4F4; 
+            border: 1px solid transparent; 
+            padding: 1rem; 
+            border-radius: 1.5rem; 
+            outline: none; 
+            font-family: 'Noto Sans TC', sans-serif; 
+            transition: all 0.3s; 
+            color: #2C3032; 
+            font-size: 15px; 
+            position: relative; 
+            line-height: normal; 
+        }
+        .input-rounded:focus { background-color: #FFFFFF; border-color: #C5A059; box-shadow: 0 4px 15px rgba(197, 160, 89, 0.1); }
+        .input-label { font-size: 10px; font-family: 'Cinzel', serif; letter-spacing: 0.15em; color: #888888; margin-bottom: 0.6rem; margin-left: 0.8rem; text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+        
+        .modal-mask { position: fixed; inset: 0; background: rgba(44, 48, 50, 0.5); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .modal-card { 
+            background: #FCFCFA; 
+            width: 100%; 
+            max-width: 22rem; 
+            border-radius: 2.5rem; 
+            padding: 2rem; 
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.25); 
+            position: relative; 
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            max-height: 85vh; 
+            overflow-y: auto; 
+            -ms-overflow-style: none; 
+            scrollbar-width: none; 
+        }
+        .modal-card::-webkit-scrollbar { display: none; }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .icon-btn-danger { width: 2rem; height: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background-color: white; border: 1px solid rgba(166, 86, 82, 0.2); color: #A65652; }
+        .icon-btn-danger:active { background-color: #FFF0F0; transform: scale(0.9); }
+        .icon-btn-primary { width: 2rem; height: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background-color: white; border: 1px solid rgba(62, 78, 80, 0.2); color: #3E4E50; }
+        .icon-btn-primary:active { background-color: #F0F2F2; transform: scale(0.9); }
+
+        .dragging { opacity: 0.8; transform: scale(1.02); z-index: 50; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .sort-handle { cursor: move; touch-action: none; color: #D1D5DB; padding: 1rem 0.5rem; display: flex; align-items: center; }
+        .sort-handle:active { color: #C5A059; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(197, 160, 89, 0.4); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(197, 160, 89, 0.8); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(197, 160, 89, 0.4) transparent; }
+
+        /* 記帳模式切換按鈕 */
+        .mode-btn { flex: 1; font-size: 12px; font-weight: bold; border-radius: 1rem; transition: all 0.3s; text-align: center; padding: 0.8rem 0; color: #9CA3AF; border: 1px solid #F0F2F2; }
+        .mode-btn.active { background-color: #C5A059; color: white; border-color: #C5A059; box-shadow: 0 4px 10px rgba(197, 160, 89, 0.3); }
+
+        select { 
+            -webkit-appearance: none; 
+            appearance: none; 
+            background: transparent; 
+            text-align: center; 
+            text-align-last: center; 
+            padding: 0; 
+            border: none;
+            outline: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 雲端狀態指示燈 */
+        .cloud-status { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: 20px; z-index: 50; font-size: 10px; color: #C5A059; opacity: 0.6; display: flex; align-items: center; gap: 5px; }
+        .cloud-status.syncing { opacity: 1; animation: pulse 1.5s infinite; }
+        .cloud-status.error { opacity: 1; color: #A65652; font-weight: bold; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        .code-block { background: #eee; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; text-align: left; margin: 10px 0; color: #333; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+    <div id="app-container" class="bg-washi relative w-full h-full">
+        
+        <!-- Cloud Status Indicator -->
+        <div class="cloud-status" :class="{ 'syncing': isSyncing, 'error': permissionError }">
+            <template v-if="permissionError">
+                 <i class="fas fa-exclamation-triangle"></i> <span>權限錯誤 (請檢查設定)</span>
+            </template>
+            <template v-else>
+                 <i class="fas fa-cloud"></i> <span v-if="isSyncing">Syncing...</span>
+            </template>
+        </div>
+
+        <!-- Toast -->
+        <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-4" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+            <div v-if="toast.show" class="fixed top-safe-top left-0 w-full flex justify-center pt-4 z-[2000] pointer-events-none">
+                <div class="bg-theme-main text-white px-6 py-3 rounded-full shadow-xl flex items-center space-x-3 border border-theme-accent/30">
+                    <span class="text-theme-accent text-lg">●</span><span class="text-xs tracking-widest font-serif">{{ toast.message }}</span>
+                </div>
+            </div>
+        </transition>
+        
+        <!-- Permission Error Alert (Enhanced) -->
+        <div v-if="permissionError" class="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">無法連線到資料庫</h3>
+                <p class="text-xs text-gray-600 mb-4 leading-relaxed">
+                    這是因為 Firebase 的「安全規則」擋住了連線。<br>請複製下方的規則並貼到 Firebase 後台。
+                </p>
+                
+                <div class="text-left text-xs bg-gray-50 p-3 rounded-xl mb-4 text-gray-600 border border-gray-200">
+                    <p class="font-bold mb-1">步驟：</p>
+                    <ol class="list-decimal list-inside space-y-1 mb-2">
+                        <li>前往 Firebase Console > Firestore Database</li>
+                        <li>點選上方 <strong>Rules (規則)</strong> 分頁</li>
+                        <li>將裡面的內容替換為：</li>
+                    </ol>
+                    <div class="code-block relative">
+                        <button @click="copyRules" class="absolute top-1 right-1 bg-white border border-gray-300 rounded px-2 py-0.5 text-[9px] hover:bg-gray-100 text-theme-main">複製</button>
+                        {{ rulesText }}
+                    </div>
+                    <p class="mt-2 text-[10px] text-gray-400">* 別忘了也要開啟 Authentication > Sign-in method > Anonymous (匿名登入)</p>
+                </div>
+                
+                <button @click="retryConnection" class="w-full py-3 bg-theme-main text-white rounded-xl text-sm font-bold shadow-lg shadow-theme-main/20">設定好了，重試連線</button>
+            </div>
+        </div>
+
+        <!-- Wizard -->
+        <div v-if="showWizard" class="fixed inset-0 z-[1500] bg-[#2C3032] overflow-y-auto text-white animate-fade-in no-scrollbar">
+            <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/washi.png')] mix-blend-overlay pointer-events-none"></div>
+            <div class="min-h-full flex flex-col items-center justify-center p-6 relative z-10">
+                <div class="w-full max-w-sm flex flex-col items-center">
+                    <div class="mb-8 text-center">
+                        <div class="relative w-24 h-24 border-[1px] border-theme-accent/30 rounded-full flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm">
+                            <div class="absolute inset-1 border-[1px] border-theme-accent/10 rounded-full"></div>
+                            <svg class="w-8 h-8 text-theme-accent opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        </div>
+                        <h1 class="text-6xl font-serif font-medium mb-2 tracking-widest text-white">栞</h1>
+                        <p class="text-[9px] text-theme-accent font-display tracking-[0.6em] uppercase">Your Shared Trip</p>
+                    </div>
+                    <div class="space-y-6 w-full px-4">
+                        <div class="group relative">
+                            <label class="input-label text-gray-400 justify-center !ml-0">Destination</label>
+                            <input type="text" v-model="tempDestination" placeholder="Kyoto" class="w-full bg-transparent border-b border-gray-600 py-2 text-center text-xl font-serif text-white focus:border-theme-accent outline-none transition-colors" @input="detectCurrency">
+                            <p v-if="detectedInfo" class="text-[10px] text-theme-accent mt-2 text-center opacity-80">{{ detectedInfo }}</p>
+                        </div>
+                        <div class="group"><label class="input-label text-gray-400 justify-center !ml-0">Departure Date</label><input type="date" v-model="tempStartDate" class="w-full bg-transparent border-b border-gray-600 py-2 text-center text-lg font-sans text-white focus:border-theme-accent outline-none opacity-90"></div>
+                        <button @click="finishWizard" class="w-full py-4 mt-6 bg-theme-accent text-[#1A1C1C] hover:bg-[#B79F76] active:scale-95 transition-all text-xs tracking-[0.3em] font-bold uppercase border border-theme-accent shadow-[0_0_20px_rgba(168,146,104,0.2)] rounded-xl">START JOURNEY</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <template v-else>
+            <!-- Header -->
+            <header class="glass-panel pt-[calc(env(safe-area-inset-top)+40px)] px-6 pb-5 z-40 sticky top-0 flex justify-between items-end shadow-sm transition-all h-[calc(140px+env(safe-area-inset-top))]">
+                <div class="flex-1 min-w-0 mr-4 relative pb-1">
+                    <div class="pl-3 border-l-2 border-theme-accent/80 flex flex-col justify-end">
+                        <p class="text-[10px] text-gray-400 font-sans font-bold uppercase tracking-[0.25em] mb-1.5 leading-none">Destination</p>
+                        <h1 class="text-4xl font-serif font-medium tracking-widest text-theme-main leading-none overflow-visible whitespace-nowrap">{{ destination }}</h1>
+                    </div>
+                </div>
+                <button @click="showSettingsModal = true" class="btn-base icon-btn mb-2 shrink-0 ml-4">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                </button>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto overflow-x-hidden pb-40 relative bg-washi" @click="expandedItemId = null">
+                
+                <!-- SCHEDULE TAB -->
+                <div v-if="currentTab === 'schedule'" class="p-5 min-h-full">
+                    <div class="sticky top-0 z-30 py-3 -mx-5 px-5 bg-gradient-to-b from-[#F4F2EE] via-[#F4F2EE] to-transparent mb-6">
+                        <div class="flex items-center justify-between">
+                            <div ref="dateContainer" 
+                                 class="flex-1 overflow-x-auto no-scrollbar flex space-x-3 py-1 px-1 snap-x cursor-grab active:cursor-grabbing" 
+                                 style="touch-action: pan-x;" 
+                                 @touchstart.stop
+                                 @mousedown="onDateDragStart"
+                                 @mousemove="onDateDragMove"
+                                 @mouseup="onDateDragEnd"
+                                 @mouseleave="onDateDragEnd">
+                                <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" 
+                                    :class="['snap-center flex-shrink-0 px-5 py-3 border transition-all duration-300 flex flex-col items-center min-w-[5rem] relative rounded-3xl select-none', currentDayIndex === index ? 'bg-theme-main text-white border-theme-main shadow-lg' : 'bg-white text-theme-sub border-transparent shadow-sm']">
+                                    <span class="text-[8px] font-display tracking-widest uppercase opacity-80 mb-1">Day {{ index + 1 }}</span>
+                                    <span class="text-sm font-serif font-bold">{{ getDayDate(index) }}</span>
+                                </button>
+                                <div class="w-2 flex-shrink-0"></div>
+                            </div>
+                            <div class="flex space-x-2 pl-3 border-l border-gray-200 ml-2">
+                                <button @click.stop="confirmDeleteDay" class="icon-btn-danger"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                                <button @click.stop="addDay" class="icon-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-5 pb-20">
+                        <div v-if="currentDayItems.length === 0" class="py-20 text-center opacity-40">
+                            <div class="w-16 h-16 border border-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"></path><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                            </div>
+                            <p class="text-xs tracking-widest font-serif">尚無行程</p>
+                        </div>
+                        <div v-for="(item, idx) in currentDayItems" :key="item.id" 
+                            class="bg-white p-5 shadow-card border-l-4 border-theme-main relative group transition-all active:scale-[0.99] rounded-3xl flex items-start gap-1"
+                            :class="{'ring-1 ring-theme-accent': expandedItemId === item.id}" 
+                            @click.stop="toggleExpand(item.id)"
+                            draggable="true"
+                            @dragstart="onDragStart($event, idx)"
+                            @dragover.prevent
+                            @drop="onDrop($event, idx)"
+                            @touchstart="onTouchDragStart($event, idx)"
+                            @touchmove="onTouchDragMove($event)"
+                            @touchend="onTouchDragEnd">
+                            
+                            <!-- 拖曳手把 -->
+                            <div class="sort-handle" @touchstart.stop="onTouchDragStart($event, idx)" @mousedown.stop>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+                            </div>
+
+                            <div class="flex-1 min-w-0 py-1">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-baseline mb-2">
+                                            <span class="text-xs font-display font-bold text-theme-accent mr-3">{{ item.time }}</span>
+                                            <h3 class="text-lg font-serif font-bold text-theme-main tracking-wide">{{ item.title }}</h3>
+                                        </div>
+                                        <div v-if="item.location" class="flex items-center text-xs text-gray-500 font-sans cursor-pointer hover:text-theme-accent transition" @click.stop="openMap(item.location)">
+                                            <svg class="w-3 h-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                            <span class="truncate underline decoration-dotted underline-offset-2">{{ item.location }}</span>
+                                        </div>
+                                    </div>
+                                    <button @click.stop="confirmDeleteItem(item.id)" class="text-gray-300 hover:text-theme-danger p-2 -mr-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                                </div>
+                                <div v-if="expandedItemId === item.id && item.note" class="mt-4 pt-3 border-t border-dashed border-gray-200 text-sm text-gray-600 font-sans leading-relaxed animate-fade-in whitespace-pre-wrap" v-html="renderNote(item.note)"></div>
+                            </div>
+                            
+                            <button @click.stop="editItem(item)" class="absolute right-4 bottom-4 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-theme-accent hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: BUDGET -->
+                <div v-if="currentTab === 'money'" class="p-5 animate-fade-in">
+                    <div class="bg-theme-main text-white p-8 rounded-3xl shadow-xl mb-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-theme-accent/20 to-transparent rounded-full blur-2xl"></div>
+                        <div class="relative z-10 text-center">
+                            <p class="text-[10px] tracking-[0.4em] text-theme-accent uppercase mb-4">Grand Total</p>
+                            <h2 class="text-5xl font-serif mb-2">{{ currencySymbol }} {{ totalExpense.toLocaleString() }}</h2>
+                            <p class="text-xs opacity-60 font-mono tracking-wider">≈ NT$ {{ toTWD(totalExpense) }}</p>
+                        </div>
+                        <button @click="openTravelerModal" class="absolute top-4 right-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition"><svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
+                    </div>
+
+                    <!-- Member Breakdown Section -->
+                    <div class="grid grid-cols-1 gap-4 pb-4">
+                        <div class="flex items-center justify-between mb-2 px-1 cursor-pointer" @click="showMemberStats = !showMemberStats">
+                            <h3 class="text-xs font-bold text-gray-400 tracking-widest uppercase">Member Expenses</h3>
+                            <svg :class="['w-4 h-4 text-gray-400 transition-transform duration-300', showMemberStats ? 'rotate-180' : '']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+
+                        <div v-show="showMemberStats" class="space-y-3 transition-all">
+                            <div v-for="t in travelers" :key="t" class="bg-white p-5 shadow-sm border-b border-gray-100 flex flex-col gap-3 rounded-3xl border border-transparent hover:border-theme-accent/30 transition-all">
+                                <div class="flex justify-between items-center">
+                                     <div class="flex items-center gap-3">
+                                         <div class="w-10 h-10 rounded-full bg-theme-input flex items-center justify-center text-sm font-bold text-theme-sub">{{ t[0] }}</div>
+                                         <span class="font-bold text-theme-main font-serif text-lg">{{ t }}</span>
+                                     </div>
+                                     <div class="text-right">
+                                         <span class="block font-bold text-theme-main font-display text-xl">{{ currencySymbol }} {{ Math.round(getMemberDetails(t).total).toLocaleString() }}</span>
+                                         <span class="block text-[10px] text-gray-400 font-mono">≈ NT$ {{ toTWD(getMemberDetails(t).total) }}</span>
+                                     </div>
+                                </div>
+                                <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                                    <div class="h-full bg-theme-main" :style="{width: (getMemberDetails(t).shared / (getMemberDetails(t).total || 1) * 100) + '%'}"></div>
+                                    <div class="h-full bg-theme-accent" :style="{width: (getMemberDetails(t).private / (getMemberDetails(t).total || 1) * 100) + '%'}"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-400 font-mono uppercase tracking-wider">
+                                    <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-theme-main"></div>Shared: {{ currencySymbol }}{{ Math.round(getMemberDetails(t).shared).toLocaleString() }}</div>
+                                    <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-theme-accent"></div>Private: {{ currencySymbol }}{{ Math.round(getMemberDetails(t).private).toLocaleString() }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Settlement Section -->
+                    <div class="grid grid-cols-1 gap-4 pb-4" v-if="debts.length > 0">
+                        <div class="flex items-center justify-between mb-2 px-1">
+                            <h3 class="text-xs font-bold text-gray-400 tracking-widest uppercase">Settlement</h3>
+                        </div>
+                        <div class="bg-theme-input p-6 rounded-3xl shadow-inner border border-theme-border/50">
+                             <div v-for="(debt, i) in debts" :key="i" class="flex items-center justify-between py-3 border-b border-dashed border-gray-300/50 last:border-0 last:pb-0 first:pt-0">
+                                 <div class="flex items-center gap-3">
+                                     <span class="font-bold text-theme-main font-serif">{{ debt.from }}</span>
+                                     <span class="text-[9px] text-white bg-theme-accent/80 px-2 py-0.5 rounded-full tracking-wider font-bold">PAYS</span>
+                                     <span class="font-bold text-theme-main font-serif">{{ debt.to }}</span>
+                                 </div>
+                                 <div class="text-right">
+                                     <span class="block font-bold text-theme-danger font-display text-lg">{{ currencySymbol }} {{ debt.amount.toLocaleString() }}</span>
+                                     <span class="block text-[9px] text-gray-400 font-mono">≈ NT$ {{ toTWD(debt.amount) }}</span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense History -->
+                     <div class="space-y-4 pb-20">
+                        <div v-if="groupedExpenses.length === 0" class="text-center py-10 text-gray-400 text-xs font-serif">無消費紀錄</div>
+                        
+                        <div v-for="group in groupedExpenses" :key="group.date" class="space-y-2">
+                            <div class="flex items-end justify-between px-2 pt-4 pb-2 cursor-pointer border-b border-dashed border-gray-200" @click="toggleDateGroup(group.date)">
+                                 <div class="flex items-center gap-2">
+                                     <svg :class="['w-3 h-3 text-theme-accent transition-transform duration-300', collapsedDates.includes(group.date) ? 'rotate-180' : '']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                     <h4 class="text-xs font-bold text-theme-sub tracking-widest font-display opacity-80">{{ group.displayDate }}</h4>
+                                 </div>
+                                 <div class="text-right leading-none">
+                                     <span class="text-sm font-serif font-bold text-theme-main mr-1">{{ currencySymbol }}{{ group.total.toLocaleString() }}</span>
+                                     <span class="text-[9px] font-mono text-theme-sub/60">≈ NT$ {{ toTWD(group.total) }}</span>
+                                 </div>
+                            </div>
+
+                            <div v-show="!collapsedDates.includes(group.date)" class="space-y-3 pt-2">
+                                <div v-for="exp in group.items" :key="exp.id" class="bg-white p-4 shadow-sm border-b border-gray-100 flex justify-between items-center btn-base rounded-2xl" @click="editExpense(exp)">
+                                    <div class="flex-1 min-w-0 pr-4">
+                                        <h4 class="font-bold text-theme-main font-serif text-sm mb-1 truncate">{{ exp.title }}</h4>
+                                        <div class="flex items-center text-[10px] text-gray-400 space-x-2 font-sans">
+                                            <span>{{ exp.payer }} 付款</span>
+                                            <span class="w-px h-2 bg-gray-300"></span>
+                                            <span>{{ exp.type === 'shared' ? '共同' : (exp.type === 'individual' && exp.beneficiaries?.[0] !== exp.payer ? '代墊' : '自費') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex-shrink-0">
+                                        <span class="block font-bold text-theme-main font-display">{{ currencySymbol }} {{ Number(exp.amount).toLocaleString() }}</span>
+                                        <span class="block text-[9px] text-gray-400 font-mono">≈ NT$ {{ toTWD(exp.amount) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: MEMO -->
+                <div v-if="currentTab === 'memo'" class="p-6 animate-fade-in">
+                    <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest border-b pb-4 border-gray-200">筆記</h2>
+                    <div class="grid gap-4 pb-20">
+                        <div v-if="notes.length === 0" class="text-center py-10 text-gray-400 text-xs font-serif">點擊右下角新增筆記</div>
+                        <div v-for="note in notes" :key="note.id" @click="editNote(note)" class="bg-white p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-transparent hover:border-theme-accent/30 btn-base !block text-left rounded-3xl group">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-theme-main text-lg tracking-wider truncate pr-4">{{ note.title || '未命名' }}</h3>
+                                <i class="fas fa-chevron-right text-gray-300 group-hover:text-theme-accent transition"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- 3. FAB -->
+            <button @click="onFabClick" class="fab-btn" title="Add New">
+                <svg v-if="currentTab === 'schedule' || currentTab === 'memo'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C5A059" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg v-if="currentTab === 'money'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C5A059" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+
+            <!-- 4. 底部導覽列 -->
+            <nav class="glass-panel absolute bottom-0 w-full h-[calc(80px+env(safe-area-inset-bottom))] pb-safe-bottom z-[900] flex justify-around items-center shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+                <button @click="currentTab='schedule'" :class="['flex flex-col items-center flex-1 py-1 btn-base', currentTab==='schedule'?'text-theme-accent':'text-theme-sub']">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-1"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                    <span class="text-[9px] font-display tracking-widest uppercase">Schedule</span>
+                </button>
+                <button @click="currentTab='money'" :class="['flex flex-col items-center flex-1 py-1 btn-base', currentTab==='money'?'text-theme-accent':'text-theme-sub']">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-1"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    <span class="text-[9px] font-display tracking-widest uppercase">Budget</span>
+                </button>
+                <button @click="currentTab='memo'" :class="['flex flex-col items-center flex-1 py-1 btn-base', currentTab==='memo'?'text-theme-accent':'text-theme-sub']">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-1"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <span class="text-[9px] font-display tracking-widest uppercase">Memo</span>
+                </button>
+            </nav>
+        </template>
+
+        <!-- Modals -->
+        <div v-if="showItemModal || showExpenseModal || showNoteModal || showSettingsModal || showTravelerModal" class="modal-mask" @click.self="closeAllModals">
+            <div class="modal-card">
+                <h3 class="text-center text-lg font-serif font-bold text-theme-main tracking-widest mb-8 border-b border-gray-100 pb-4">{{ getModalTitle() }}</h3>
+                
+                <!-- Schedule Form -->
+                <div v-if="showItemModal" class="space-y-6">
+                    <div class="flex gap-4">
+                         <div class="flex-1 relative group">
+                             <label class="input-label justify-center !ml-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Title</label>
+                             <input v-model="formItem.title" class="input-rounded pr-10 pl-12" placeholder="景點名稱">
+                             <button @click="searchGoogleMaps(formItem.title)" class="absolute right-3 top-9 text-gray-400 hover:text-theme-accent transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                         </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1.5">
+                         <label class="input-label justify-center !ml-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Time</label>
+                         <div class="flex items-center bg-theme-input rounded-3xl p-2 border border-transparent focus-within:border-theme-accent transition-colors">
+                             <div class="flex-1 relative"><input v-model="tempHour" type="tel" maxlength="2" class="w-full text-center bg-transparent py-2 text-xl font-bold font-sans outline-none text-theme-main placeholder-gray-300" placeholder="09"></div>
+                             <span class="text-gray-300 font-bold">:</span>
+                             <div class="flex-1 relative"><input v-model="tempMinute" type="tel" maxlength="2" class="w-full text-center bg-transparent py-2 text-xl font-bold font-sans outline-none text-theme-main placeholder-gray-300" placeholder="00"></div>
+                         </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <label class="input-label justify-center !ml-0">Link / Address</label>
+                        <div class="relative">
+                            <svg class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <input v-model="formItem.location" class="input-rounded pl-12" placeholder="地址或相關網址">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1.5">
+                        <label class="input-label justify-center !ml-0">Note</label>
+                        <textarea v-model="formItem.note" class="input-rounded resize-none h-32 leading-relaxed" placeholder="寫下備註..."></textarea>
+                    </div>
+
+                    <button @click="saveItem" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform mt-4">SAVE EVENT</button>
+                </div>
+                
+                <!-- Expense Form -->
+                <div v-if="showExpenseModal" class="space-y-6">
+                     <div class="space-y-4">
+                         <label class="input-label justify-center !ml-0">ITEM</label>
+                         <input v-model="formExpense.title" class="input-rounded rounded-3xl text-center text-lg font-serif border-none bg-theme-input" placeholder="消費項目">
+                         <div class="relative">
+                             <span class="absolute left-6 top-1/2 -translate-y-1/2 text-theme-sub text-lg font-bold">{{ currencySymbol }}</span>
+                             <input v-model="formExpense.amount" type="number" class="input-rounded rounded-3xl text-right text-3xl font-serif pr-6 pl-12 bg-theme-input h-16" placeholder="0">
+                         </div>
+                     </div>
+
+                     <div class="flex flex-col gap-4">
+                         <div class="w-full flex flex-col gap-1.5">
+                             <label class="input-label justify-center !ml-0">Date</label>
+                             <input type="date" v-model="formExpense.date" class="input-rounded rounded-2xl text-center text-sm font-sans bg-theme-input px-2 min-w-0 w-full h-14 appearance-none">
+                         </div>
+                         <div class="w-full flex flex-col gap-1.5">
+                             <label class="input-label justify-center !ml-0">Time</label>
+                             <div class="grid grid-cols-[1fr_auto_1fr] items-center bg-theme-input rounded-2xl h-14 border border-transparent focus-within:border-theme-accent transition-colors w-full px-4">
+                                 <div class="relative h-full">
+                                     <select v-model="tempHourExp" class="w-full h-full bg-transparent text-center text-sm font-bold font-sans outline-none text-theme-main appearance-none cursor-pointer absolute inset-0 z-10 opacity-0">
+                                         <option v-for="h in 24" :value="String(h).padStart(2, '0')">{{ String(h).padStart(2, '0') }}</option>
+                                     </select>
+                                     <div class="w-full h-full flex items-center justify-center pointer-events-none text-theme-main font-bold">{{ tempHourExp }}</div>
+                                 </div>
+                                 <span class="text-gray-300 font-bold text-xs pb-0.5">:</span>
+                                 <div class="relative h-full">
+                                     <select v-model="tempMinuteExp" class="w-full h-full bg-transparent text-center text-sm font-bold font-sans outline-none text-theme-main appearance-none cursor-pointer absolute inset-0 z-10 opacity-0">
+                                         <option v-for="m in 60" :value="String(m).padStart(2, '0')">{{ String(m).padStart(2, '0') }}</option>
+                                     </select>
+                                     <div class="w-full h-full flex items-center justify-center pointer-events-none text-theme-main font-bold">{{ tempMinuteExp }}</div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                     
+                     <div class="space-y-2">
+                         <label class="input-label justify-center !ml-0">付款人 Payer</label>
+                         <div class="flex gap-3 justify-center">
+                             <button v-for="t in travelers" @click="formExpense.payer=t" :class="['px-4 py-2 text-xs rounded-2xl transition-all border', formExpense.payer===t?'bg-theme-main text-white border-theme-main':'bg-white text-gray-400 border-gray-200']">{{t}}</button>
+                         </div>
+                     </div>
+
+                     <div class="flex bg-theme-input p-1 rounded-2xl">
+                         <button @click="formExpense.type='shared'; formExpense.beneficiaries=[]" :class="['mode-btn', formExpense.type==='shared'?'active':'']">共同</button>
+                         <button @click="formExpense.type='individual'; formExpense.beneficiaries=[formExpense.payer]" :class="['mode-btn', (formExpense.type==='individual' && formExpense.beneficiaries?.[0]===formExpense.payer)?'active':'']">自費</button>
+                         <button @click="formExpense.type='individual'; formExpense.beneficiaries=[]" :class="['mode-btn', (formExpense.type==='individual' && formExpense.beneficiaries?.[0]!==formExpense.payer)?'active':'']">代墊</button>
+                     </div>
+                     
+                     <div v-if="formExpense.type === 'shared'" class="text-center animate-fade-in">
+                         <p class="text-[10px] text-gray-400 mb-2">分攤對象 (預設全員)</p>
+                         <div class="flex flex-wrap gap-2 justify-center">
+                             <button v-for="t in travelers" @click="toggleBeneficiary(t)" :class="['px-3 py-1.5 text-xs rounded-xl border transition', (formExpense.beneficiaries?.length === 0 || formExpense.beneficiaries?.includes(t)) ? 'bg-theme-accent/20 text-theme-accent border-theme-accent' : 'bg-white text-gray-300 border-gray-100']">{{t}}</button>
+                         </div>
+                     </div>
+                     
+                     <div v-if="formExpense.type === 'individual' && formExpense.beneficiaries?.[0] !== formExpense.payer" class="text-center animate-fade-in">
+                         <p class="text-[10px] text-gray-400 mb-2">幫誰代墊?</p>
+                         <div class="flex flex-wrap gap-2 justify-center">
+                             <button v-for="t in travelers" v-show="t !== formExpense.payer" @click="formExpense.beneficiaries=[t]" :class="['px-3 py-1.5 text-xs rounded-xl border transition', formExpense.beneficiaries?.[0] === t ? 'bg-theme-danger/10 text-theme-danger border-theme-danger' : 'bg-white text-gray-300 border-gray-100']">{{t}}</button>
+                         </div>
+                     </div>
+
+                     <button @click="saveExpense" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/30 active:scale-[0.98] transition-transform mt-2">CONFIRM</button>
+                </div>
+                 
+                 <!-- Traveler Management Modal -->
+                 <div v-if="showTravelerModal" class="space-y-6">
+                     <div class="space-y-3 max-h-60 overflow-y-auto no-scrollbar pr-1">
+                         <div v-for="(t, idx) in editingTravelers" :key="idx" class="flex items-center gap-2">
+                             <span class="text-xs font-bold text-theme-accent w-4 text-center">{{ idx + 1 }}</span>
+                             <input v-model="editingTravelers[idx]" class="input-rounded py-3 bg-theme-input flex-1 rounded-2xl" placeholder="Name">
+                             <button @click="removeTraveler(idx)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                         </div>
+                     </div>
+                     <button @click="addTraveler" class="w-full py-3 border border-dashed border-theme-accent/50 text-theme-accent text-xs font-bold rounded-2xl hover:bg-theme-accent/5 transition">+ Add New Traveler</button>
+                     <button @click="saveTravelers" class="w-full py-4 bg-theme-main text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg mt-2">SAVE CHANGES</button>
+                 </div>
+
+                 <!-- Note Form -->
+                 <div v-if="showNoteModal" class="space-y-4">
+                     <input v-model="formNote.title" class="w-full bg-transparent border-b border-theme-border p-2 text-xl font-bold font-serif outline-none focus:border-theme-accent transition-colors text-theme-main" placeholder="標題">
+                     <textarea v-model="formNote.content" class="w-full bg-transparent border-none p-2 text-sm h-48 outline-none resize-none leading-relaxed placeholder-gray-300 text-theme-main" placeholder="寫下內容..."></textarea>
+                     <button @click="saveNote" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform mt-2">SAVE NOTE</button>
+                 </div>
+                 
+                 <!-- Settings -->
+                 <div v-if="showSettingsModal" class="space-y-6">
+                     <div><label class="input-label justify-center !ml-0">Destination</label><input v-model="destination" class="input-rounded rounded-2xl text-center"></div>
+                     <div><label class="input-label justify-center !ml-0">Currency</label><input v-model="currencySymbol" class="input-rounded rounded-2xl font-mono text-center"></div>
+                     <!-- Backup functions removed as we are now on cloud, but keeping reset -->
+                     <button @click="confirmResetData" class="w-full py-2 text-theme-danger text-[10px] tracking-widest opacity-60 hover:opacity-100 rounded-2xl">RESET ALL CLOUD DATA</button>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div v-if="confirmModal.show" class="modal-mask">
+            <div class="bg-theme-paper w-72 p-6 text-center shadow-2xl rounded-3xl relative overflow-hidden border border-theme-border/20">
+                 <div class="w-12 h-12 bg-theme-input rounded-full flex items-center justify-center mx-auto mb-4 text-theme-accent"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+                 <h3 class="font-serif font-bold text-theme-main mb-2 text-lg">{{ confirmModal.title }}</h3>
+                 <p class="text-xs text-gray-500 mb-6 leading-relaxed">{{ confirmModal.message }}</p>
+                 <div class="flex gap-3">
+                     <button @click="confirmModal.show=false" class="flex-1 py-3 rounded-2xl text-theme-sub text-xs bg-theme-input hover:bg-white/10">CANCEL</button>
+                     <button @click="executeConfirm" class="flex-1 py-3 rounded-2xl bg-theme-accent text-white text-xs shadow-lg shadow-theme-accent/20">CONFIRM</button>
+                 </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { createApp, ref, computed, onMounted, watch, nextTick } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    // ----------------------------------------------------
+    // 1. Firebase Configuration & Initialization
+    // ----------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuSZftA_x822_SLh7292lEutuLr9KFteM",
+      authDomain: "trip-new-36c48.firebaseapp.com",
+      projectId: "trip-new-36c48",
+      storageBucket: "trip-new-36c48.firebasestorage.app",
+      messagingSenderId: "189989466738",
+      appId: "1:189989466738:web:a2d1412b213caadb6408eb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // 使用一個固定的 ID 來存放此群組的行程。
+    const TRIP_DOC_ID = "shared_trip_data"; 
+    const tripDocRef = doc(db, "trips", TRIP_DOC_ID);
+
+    // ----------------------------------------------------
+    // 2. Constants & Helpers
+    // ----------------------------------------------------
+    const CURRENCY_MAP = {
+        'japan': { s: '¥', r: 0.21, n: '日幣' }, 'kyoto': { s: '¥', r: 0.21, n: '日幣' }, 'osaka': { s: '¥', r: 0.21, n: '日幣' }, 'tokyo': { s: '¥', r: 0.21, n: '日幣' },
+        'usa': { s: '$', r: 32.5, n: '美金' }, 'europe': { s: '€', r: 35.0, n: '歐元' }, 'uk': { s: '£', r: 41.5, n: '英鎊' }, 'korea': { s: '₩', r: 0.024, n: '韓元' },
+        'taiwan': { s: 'NT$', r: 1, n: '台幣' }, 'thailand': { s: '฿', r: 0.9, n: '泰銖' }, 'china': { s: '¥', r: 4.5, n: '人民幣' },
+        '日本': { s: '¥', r: 0.21, n: '日幣' }, '京都': { s: '¥', r: 0.21, n: '日幣' }, '大阪': { s: '¥', r: 0.21, n: '日幣' }, '東京': { s: '¥', r: 0.21, n: '日幣' },
+        '美國': { s: '$', r: 32.5, n: '美金' }, '歐洲': { s: '€', r: 35.0, n: '歐元' }, '法國': { s: '€', r: 35.0, n: '歐元' }, '英國': { s: '£', r: 41.5, n: '英鎊' },
+        '韓國': { s: '₩', r: 0.024, n: '韓元' }, '台灣': { s: 'NT$', r: 1, n: '台幣' }, '泰國': { s: '฿', r: 0.9, n: '泰銖' }, '中國': { s: '¥', r: 4.5, n: '人民幣' }
+    };
+
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    createApp({
+        setup() {
+            // Data Refs
+            const currentTab = ref('schedule');
+            const currentDayIndex = ref(0);
+            const days = ref([{ items: [] }]);
+            const travelers = ref(['我', '旅伴']);
+            const expenses = ref([]);
+            const notes = ref([]);
+            const exchangeRate = ref(0.21);
+            const startDate = ref('');
+            const destination = ref('');
+            const currencySymbol = ref('¥');
+            const showWizard = ref(false);
+            const showItemModal = ref(false), showExpenseModal = ref(false), showSettingsModal = ref(false), showNoteModal = ref(false), showTravelerModal = ref(false);
+            const isEditing = ref(false), isNoteEditing = ref(false), isExpenseEditing = ref(false);
+            const expenseFilter = ref('all');
+            const toast = ref({ show: false, message: '', type: 'success' });
+            const confirmModal = ref({ show: false, title: '', message: '', callback: null });
+            const expandedItemId = ref(null);
+            const expandedDates = ref([]); 
+            const editingTravelers = ref([]);
+
+            // Cloud Status
+            const isSyncing = ref(false);
+            const isRemoteUpdate = ref(false); 
+            const permissionError = ref(false); // Track permission errors
+            let unsubscribeSnapshot = null; // To hold the listener unsub function
+
+            // Form Temps
+            const tempDestination = ref(''), tempStartDate = ref(''), detectedInfo = ref('');
+            const tempHour = ref('09'), tempMinute = ref('00'), tempHourExp = ref('09'), tempMinuteExp = ref('00');
+            const formItem = ref({ id: null, time: '', title: '', location: '', note: '' });
+            const formExpense = ref({ id: null, title: '', amount: '', payer: travelers.value[0], beneficiaries: [], type: 'shared', date: '', time: '', note: '' });
+            const formNote = ref({ id: null, title: '', content: '', updatedAt: '' });
+            const fileInput = ref(null);
+            
+            const rulesText = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}`;
+
+            // Computed
+            const currentDayItems = computed(() => days.value[currentDayIndex.value]?.items || []);
+            const totalExpense = computed(() => expenses.value.reduce((sum, exp) => sum + Number(exp.amount), 0));
+            
+            const filteredExpenses = computed(() => {
+                let list = expenseFilter.value === 'all' ? [...expenses.value] : expenses.value.filter(e => e.type === expenseFilter.value);
+                return list.sort((a, b) => b.id - a.id);
+            });
+            const sortedNotes = computed(() => [...notes.value].sort((a, b) => b.id - a.id));
+            
+            const statistics = computed(() => {
+                let stats = { shared: 0, individual: {} }; travelers.value.forEach(t => stats.individual[t] = 0);
+                expenses.value.forEach(exp => {
+                    const amt = Number(exp.amount);
+                    if (exp.type === 'shared') stats.shared += amt;
+                    else if (exp.beneficiaries?.length) {
+                        const split = amt / exp.beneficiaries.length;
+                        exp.beneficiaries.forEach(b => { if (stats.individual[b] !== undefined) stats.individual[b] += split; });
+                    }
+                });
+                return stats;
+            });
+
+            // UI Toggles
+            const toggleExpand = (id) => expandedItemId.value = expandedItemId.value === id ? null : id;
+            const toggleDateGroup = (date) => {
+                 const idx = collapsedDates.value.indexOf(date);
+                 if (idx > -1) collapsedDates.value.splice(idx, 1);
+                 else collapsedDates.value.push(date);
+            };
+            const showMemberStats = ref(true); 
+            const collapsedDates = ref([]);
+
+            // Drag & Drop
+            const dragState = ref({ isDown: false, startX: 0, scrollLeft: 0 });
+            const dragIndex = ref(null);
+            const dateContainer = ref(null);
+
+            const onTouchDragStart = (e, index) => { dragIndex.value = index; };
+            const onTouchDragMove = (e) => {
+                if (dragIndex.value === null) return;
+                const touch = e.touches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.group');
+                if (!target) return;
+                
+                const children = Array.from(target.parentNode.children);
+                const newIndex = children.indexOf(target);
+                
+                if (newIndex !== -1 && newIndex !== dragIndex.value) {
+                    const items = days.value[currentDayIndex.value].items;
+                    const [movedItem] = items.splice(dragIndex.value, 1);
+                    items.splice(newIndex, 0, movedItem);
+                    dragIndex.value = newIndex;
+                }
+            };
+            const onTouchDragEnd = () => { dragIndex.value = null; };
+            
+            const onDragStart = (e, index) => { dragIndex.value = index; e.dataTransfer.effectAllowed = 'move'; };
+            const onDrop = (e, index) => {
+                 if (dragIndex.value !== null && dragIndex.value !== index) {
+                     const items = days.value[currentDayIndex.value].items;
+                     const [movedItem] = items.splice(dragIndex.value, 1);
+                     items.splice(index, 0, movedItem);
+                     dragIndex.value = null;
+                 }
+            };
+
+            const openMap = (loc) => {
+                if (!loc) return;
+                const url = (loc.startsWith('http') || loc.startsWith('www')) 
+                    ? loc 
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`;
+                window.open(url, '_blank');
+            };
+            
+            const renderNote = (note) => {
+                if (!note) return '';
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return note.replace(urlRegex, '<a href="$1" target="_blank" class="text-theme-accent underline" onclick="event.stopPropagation()">連結 Link</a>');
+            };
+
+            const showToast = (msg) => { toast.value = { show: true, message: msg, type: 'success' }; setTimeout(() => toast.value.show = false, 3000); };
+            const triggerConfirm = (title, msg, cb) => { confirmModal.value = { show: true, title, message: msg, callback: cb }; };
+            const executeConfirm = () => { if (confirmModal.value.callback) confirmModal.value.callback(); confirmModal.value.show = false; };
+
+            const toTWD = (val) => Math.round(val * exchangeRate.value).toLocaleString();
+            const getDayDate = (index) => { 
+                if(!startDate.value) return ''; 
+                const d = new Date(startDate.value); d.setDate(d.getDate() + index); 
+                return `${d.getMonth() + 1}/${d.getDate()}`; 
+            };
+            const searchGoogleMaps = (q) => q ? openMap(q) : showToast('請輸入地點');
+            
+            const detectCurrency = () => { 
+                const info = Object.entries(CURRENCY_MAP).find(([k]) => tempDestination.value.toLowerCase().includes(k))?.[1];
+                if (info) { exchangeRate.value = info.r; currencySymbol.value = info.s; detectedInfo.value = `${info.n} (${info.s}) ≈ ${info.r}`; }
+            };
+            
+            const finishWizard = () => { 
+                if(!tempDestination.value || !tempStartDate.value) return showToast('請輸入完整資訊');
+                destination.value = tempDestination.value; 
+                startDate.value = tempStartDate.value; 
+                showWizard.value = false; 
+                if (!detectedInfo.value) detectCurrency(); 
+            };
+            
+            // ----------------------------------------------------
+            // 3. Firebase Data Persistence Logic
+            // ----------------------------------------------------
+            
+            // A. SAVE to Cloud (Debounced)
+            const saveToCloud = debounce(async () => {
+                // If this change came from the cloud, don't write it back
+                if (isRemoteUpdate.value) return;
+
+                isSyncing.value = true;
+                permissionError.value = false; // Reset error on save attempt
+                
+                try {
+                    const dataToSave = {
+                        days: JSON.parse(JSON.stringify(days.value)),
+                        expenses: JSON.parse(JSON.stringify(expenses.value)),
+                        notes: JSON.parse(JSON.stringify(notes.value)),
+                        startDate: startDate.value,
+                        destination: destination.value,
+                        exchangeRate: exchangeRate.value,
+                        currencySymbol: currencySymbol.value,
+                        travelers: JSON.parse(JSON.stringify(travelers.value))
+                    };
+                    
+                    await setDoc(tripDocRef, dataToSave, { merge: true });
+                    isSyncing.value = false;
+                } catch (e) {
+                    console.error("Save Error", e);
+                    if (e.code === 'permission-denied') {
+                        permissionError.value = true;
+                    } else {
+                        showToast("同步失敗，請檢查網路");
+                    }
+                    isSyncing.value = false;
+                }
+            }, 800);
+
+            // B. WATCH for local changes -> Trigger Save
+            watch([days, expenses, notes, startDate, destination, exchangeRate, currencySymbol, travelers], () => {
+                if (!isRemoteUpdate.value) {
+                    saveToCloud();
+                }
+            }, { deep: true });
+
+            // C. LOAD & LISTEN from Cloud
+            const setupFirestoreListener = () => {
+                if (unsubscribeSnapshot) return; // Already listening
+
+                unsubscribeSnapshot = onSnapshot(tripDocRef, (docSnap) => {
+                    permissionError.value = false; // Connection successful
+                    if (docSnap.exists()) {
+                        const d = docSnap.data();
+                        
+                        isRemoteUpdate.value = true;
+
+                        days.value = d.days || [{items:[]}]; 
+                        expenses.value = (d.expenses||[]).map(e => ({...e, beneficiaries: e.beneficiaries || [], type: e.type || 'shared'})); 
+                        notes.value = d.notes || []; 
+                        startDate.value = d.startDate || ''; 
+                        destination.value = d.destination || ''; 
+                        exchangeRate.value = d.exchangeRate || 0.21; 
+                        currencySymbol.value = d.currencySymbol || '¥'; 
+                        travelers.value = d.travelers || ['我', '旅伴'];
+                        
+                        if (destination.value && startDate.value) {
+                            showWizard.value = false;
+                        } else {
+                            showWizard.value = true;
+                        }
+
+                        nextTick(() => {
+                            isRemoteUpdate.value = false;
+                        });
+                    } else {
+                        showWizard.value = true;
+                    }
+                }, (error) => {
+                    console.error("Listen Error", error);
+                    if (error.code === 'permission-denied') {
+                        permissionError.value = true;
+                    } else {
+                        showToast("連線資料庫失敗");
+                    }
+                });
+            };
+
+            onMounted(() => {
+                // Listen for auth state changes FIRST
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("User logged in:", user.uid);
+                        setupFirestoreListener();
+                    } else {
+                        console.log("No user, signing in...");
+                        signInAnonymously(auth).catch((error) => {
+                            console.error("Auth failed", error);
+                            // Even if auth fails, we might try to listen (e.g. if rules are public), 
+                            // but usually this will lead to permission denied if rules require auth.
+                            setupFirestoreListener();
+                        });
+                    }
+                });
+            });
+            
+            const retryConnection = () => {
+                location.reload();
+            }
+            
+            const copyRules = () => {
+                navigator.clipboard.writeText(rulesText);
+                showToast("已複製規則！");
+            };
+
+            const confirmResetData = () => triggerConfirm('Reset Data', '確定刪除所有雲端資料？這會清空所有人的畫面。', async () => { 
+                isRemoteUpdate.value = true; // Block sync
+                // Reset local
+                days.value = [{ items: [] }];
+                expenses.value = [];
+                notes.value = [];
+                startDate.value = '';
+                destination.value = '';
+                showWizard.value = true;
+                
+                // Reset Cloud
+                await setDoc(tripDocRef, {}); 
+                setTimeout(() => isRemoteUpdate.value = false, 1000);
+            });
+
+            // ----------------------------------------------------
+            // End Persistence Logic
+            // ----------------------------------------------------
+
+            const addDay = () => { days.value.push({ items: [] }); currentDayIndex.value = days.value.length - 1; };
+            const confirmDeleteDay = () => days.value.length <= 1 ? showToast('最少保留一天') : triggerConfirm('刪除', `刪除 Day ${currentDayIndex.value+1}?`, () => { days.value.splice(currentDayIndex.value, 1); currentDayIndex.value = Math.min(currentDayIndex.value, days.value.length-1); });
+            const confirmDeleteItem = (id) => triggerConfirm('刪除', '確定刪除此行程？', () => days.value[currentDayIndex.value].items = days.value[currentDayIndex.value].items.filter(i => i.id !== id));
+            const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => expenses.value = expenses.value.filter(e => e.id !== id));
+            const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => notes.value = notes.value.filter(n => n.id !== id));
+
+            const onFabClick = () => {
+                if(currentTab.value === 'schedule') { formItem.value = { id: Date.now(), time: '09:00', title: '', location: '', note: '' }; tempHour.value='09'; tempMinute.value='00'; isEditing.value = false; showItemModal.value = true; }
+                if(currentTab.value === 'money') { 
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    const h = String(now.getHours()).padStart(2, '0');
+                    const m = String(now.getMinutes()).padStart(2, '0');
+                    
+                    formExpense.value = { id: Date.now(), title: '', amount: '', payer: travelers.value[0], beneficiaries: [], type: 'shared', date: dateStr, time: `${h}:${m}` }; 
+                    tempHourExp.value = String(h).padStart(2, '0'); 
+                    tempMinuteExp.value = String(m).padStart(2, '0'); 
+                    
+                    isExpenseEditing.value = false; 
+                    showExpenseModal.value = true; 
+                }
+                if(currentTab.value === 'memo') { formNote.value = { id: Date.now(), title: '', content: '' }; isNoteEditing.value = false; showNoteModal.value = true; }
+            };
+
+            const saveItem = () => {
+                if(!formItem.value.title) return showToast('請輸入名稱');
+                
+                const newItem = { 
+                    ...formItem.value, 
+                    time: `${tempHour.value}:${tempMinute.value}` 
+                };
+                
+                const items = days.value[currentDayIndex.value].items;
+                
+                if(isEditing.value) { 
+                    const idx = items.findIndex(i => i.id === formItem.value.id);
+                    if (idx !== -1) {
+                        items.splice(idx, 1, newItem);
+                    }
+                } else { 
+                    items.push(newItem); 
+                }
+                showItemModal.value = false;
+            };
+            
+            const toggleBeneficiary = (name) => {
+                if (!formExpense.value.beneficiaries) formExpense.value.beneficiaries = [];
+                
+                if (formExpense.value.type === 'shared') {
+                    if (formExpense.value.beneficiaries.length === 0) {
+                         formExpense.value.beneficiaries = travelers.value.filter(t => t !== name);
+                    } else {
+                        const idx = formExpense.value.beneficiaries.indexOf(name);
+                        if (idx > -1) formExpense.value.beneficiaries.splice(idx, 1);
+                        else formExpense.value.beneficiaries.push(name);
+                    }
+                    if (formExpense.value.beneficiaries.length === travelers.value.length) formExpense.value.beneficiaries = [];
+                }
+            };
+
+            const saveExpense = () => {
+                if(!formExpense.value.title || !formExpense.value.amount) return showToast('請輸入完整資訊');
+                
+                let benes = formExpense.value.beneficiaries || [];
+                if (formExpense.value.type === 'shared' && benes.length === 0) benes = []; 
+                
+                formExpense.value.time = `${tempHourExp.value}:${tempMinuteExp.value}`;
+                
+                const newExp = { ...formExpense.value, beneficiaries: benes };
+
+                if(isExpenseEditing.value) { 
+                    const idx = expenses.value.findIndex(e => e.id === formExpense.value.id);
+                    if(idx !== -1) expenses.value.splice(idx, 1, newExp); 
+                } else { 
+                    expenses.value.unshift(newExp); 
+                }
+                showExpenseModal.value = false;
+            };
+
+            const saveNote = () => {
+                 if(!formNote.value.title) return showToast('請輸入標題');
+                 const now = new Date();
+                 const newNote = { ...formNote.value, updatedAt: now };
+                 
+                 if(isNoteEditing.value) { 
+                     const idx = notes.value.findIndex(n => n.id === formNote.value.id);
+                     if(idx !== -1) notes.value.splice(idx, 1, newNote); 
+                 } else { 
+                     notes.value.unshift(newNote); 
+                 }
+                 showNoteModal.value = false;
+            };
+            
+            const editItem = (item) => { formItem.value = {...item}; [tempHour.value, tempMinute.value] = item.time.split(':'); isEditing.value=true; showItemModal.value=true; };
+            const editExpense = (exp) => { 
+                formExpense.value = {...exp}; 
+                if (!formExpense.value.beneficiaries) formExpense.value.beneficiaries = [];
+                if(exp.time) [tempHourExp.value, tempMinuteExp.value] = exp.time.split(':'); 
+                isExpenseEditing.value=true; 
+                showExpenseModal.value=true; 
+            };
+            const editNote = (note) => { formNote.value = {...note}; isNoteEditing.value=true; showNoteModal.value=true; };
+            
+            const closeAllModals = () => { 
+                showItemModal.value = false; 
+                showExpenseModal.value = false; 
+                showNoteModal.value = false; 
+                showSettingsModal.value = false; 
+                showTravelerModal.value = false; 
+            };
+            
+            const getModalTitle = () => {
+                if(showItemModal.value) return isEditing.value ? 'Edit Event' : 'New Event';
+                if(showExpenseModal.value) return isExpenseEditing.value ? 'Edit Expense' : 'New Expense';
+                if(showNoteModal.value) return isNoteEditing.value ? 'Edit Note' : 'New Note';
+                if(showSettingsModal.value) return 'Settings';
+                if(showTravelerModal.value) return 'Travelers';
+            };
+
+            const onDateDragStart = (e) => { dragState.value = { isDown: true, startX: e.pageX - dateContainer.value.offsetLeft, scrollLeft: dateContainer.value.scrollLeft }; };
+            const onDateDragMove = (e) => { if (!dragState.value.isDown) return; e.preventDefault(); dateContainer.value.scrollLeft = dragState.value.scrollLeft - (e.pageX - dateContainer.value.offsetLeft - dragState.value.startX) * 2; };
+            const onDateDragEnd = () => dragState.value.isDown = false;
+            
+            const getMemberDetails = (name) => {
+                const sharedPart = statistics.value.shared / (travelers.value.length || 1);
+                const privatePart = statistics.value.individual[name] || 0;
+                return {
+                    total: sharedPart + privatePart,
+                    shared: sharedPart,
+                    private: privatePart
+                };
+            };
+
+            const debts = computed(() => {
+                let balances = {}; travelers.value.forEach(t => balances[t] = 0);
+                expenses.value.forEach(exp => {
+                    const amt = Number(exp.amount), payer = exp.payer;
+                    if (balances[payer] === undefined) balances[payer] = 0;
+                    
+                    let benes = exp.type === 'shared' ? (exp.beneficiaries.length > 0 ? exp.beneficiaries : travelers.value) : (exp.beneficiaries.length > 0 ? exp.beneficiaries : [payer]);
+                    const split = amt / benes.length;
+                    balances[payer] += amt;
+                    benes.forEach(b => { if (balances[b] !== undefined) balances[b] -= split; });
+                });
+                let result = [], debtors = [], creditors = [];
+                for (const [p, a] of Object.entries(balances)) { if (a < -1) debtors.push({ p, a }); if (a > 1) creditors.push({ p, a }); }
+                debtors.sort((a, b) => a.a - b.a); creditors.sort((a, b) => b.a - a.a);
+                let i = 0, j = 0;
+                while (i < debtors.length && j < creditors.length) {
+                    let d = debtors[i], c = creditors[j], amt = Math.min(Math.abs(d.a), c.a);
+                    result.push({ from: d.p, to: c.p, amount: Math.round(amt) });
+                    d.a += amt; c.a -= amt;
+                    if (Math.abs(d.a) < 1) i++; if (c.a < 1) j++;
+                }
+                return result;
+            });
+            
+            const groupedExpenses = computed(() => {
+                const groups = {};
+                filteredExpenses.value.forEach(exp => {
+                    const dateKey = exp.date || 'no-date';
+                    if (!groups[dateKey]) groups[dateKey] = [];
+                    groups[dateKey].push(exp);
+                });
+                return Object.keys(groups).sort((a, b) => (a === 'no-date' ? 1 : b === 'no-date' ? -1 : b.localeCompare(a))).map(date => {
+                    const d = new Date(date);
+                    const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+                    const displayDate = date === 'no-date' ? '未設定日期' : `${d.getMonth() + 1}月${d.getDate()}日 ${days[d.getDay()]}`;
+                    const items = groups[date];
+                    const total = items.reduce((sum, item) => sum + Number(item.amount), 0);
+                    return { date, displayDate, items, total };
+                });
+            });
+
+            const openTravelerModal = () => {
+                editingTravelers.value = [...travelers.value];
+                showTravelerModal.value = true;
+            };
+            
+            const addTraveler = () => {
+                editingTravelers.value.push(`旅伴${editingTravelers.value.length + 1}`);
+            };
+            
+            const removeTraveler = (idx) => {
+                if (editingTravelers.value.length > 1) {
+                    editingTravelers.value.splice(idx, 1);
+                } else {
+                    showToast('At least one traveler required');
+                }
+            };
+            
+            const saveTravelers = () => {
+                const oldTravelers = [...travelers.value];
+                const newTravelers = [...editingTravelers.value];
+                
+                expenses.value.forEach(exp => {
+                    const payerIdx = oldTravelers.indexOf(exp.payer);
+                    if (payerIdx !== -1 && payerIdx < newTravelers.length) {
+                        exp.payer = newTravelers[payerIdx];
+                    }
+                    
+                    if (exp.beneficiaries && exp.beneficiaries.length > 0) {
+                         exp.beneficiaries = exp.beneficiaries.map(b => {
+                             const bIdx = oldTravelers.indexOf(b);
+                             return (bIdx !== -1 && bIdx < newTravelers.length) ? newTravelers[bIdx] : b;
+                         }).filter(b => newTravelers.includes(b));
+                    }
+                });
+
+                travelers.value = newTravelers;
+                showTravelerModal.value = false;
+                showToast('Travelers Updated');
+            };
+
+            return { 
+                currentTab, currentDayIndex, days, currentDayItems, totalExpense, filteredExpenses, notes, sortedNotes, destination, currencySymbol, startDate, exchangeRate, 
+                showWizard, tempDestination, tempStartDate, detectedInfo, finishWizard, detectCurrency,
+                showItemModal, showExpenseModal, showSettingsModal, showNoteModal, closeAllModals, getModalTitle,
+                formItem, formExpense, formNote, tempHour, tempMinute, travelers,
+                saveItem, saveExpense, saveNote, editItem, editExpense, editNote, confirmDeleteItem, confirmDeleteExpense, confirmDeleteNote,
+                onFabClick, confirmResetData, addDay, confirmDeleteDay, openMap, searchGoogleMaps, renderNote,
+                toast, confirmModal, executeConfirm, toTWD, getDayDate,
+                toggleExpand, expandedItemId, isEditing, isExpenseEditing, isNoteEditing,
+                onTouchDragStart, onTouchDragMove, onTouchDragEnd, onDragStart, onDrop, dragIndex, dateContainer, onDateDragStart, onDateDragMove, onDateDragEnd, getMemberDetails, statistics, debts, toggleBeneficiary, groupedExpenses, tempHourExp, tempMinuteExp, showMemberStats, collapsedDates, toggleDateGroup,
+                showTravelerModal, openTravelerModal, editingTravelers, addTraveler, removeTraveler, saveTravelers,
+                isSyncing, permissionError, retryConnection, rulesText, copyRules // New
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
