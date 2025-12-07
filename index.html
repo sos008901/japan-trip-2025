@@ -522,11 +522,12 @@
                                                 <div :class="['w-5 h-5 rounded-md border-2 flex items-center justify-center mr-3 transition-colors', item.done ? 'bg-theme-accent border-theme-accent' : 'border-gray-300']">
                                                     <i v-if="item.done" class="fas fa-check text-white text-[10px]"></i>
                                                 </div>
-                                                <!-- Item Text + Link Icon -->
+                                                
                                                 <div class="flex-1 min-w-0 mr-2">
                                                     <div :class="['text-sm font-sans transition-all break-words', item.done ? 'text-gray-300 line-through' : 'text-theme-main']">
                                                         {{ item.text }}
                                                     </div>
+                                                    <div v-if="item.note" class="text-xs text-gray-400 mt-0.5 font-serif italic">{{ item.note }}</div>
                                                 </div>
                                             </div>
                                             
@@ -548,7 +549,7 @@
                                     
                                     <!-- Add Item Input Area -->
                                     <div class="mt-3 space-y-2">
-                                        <!-- Row 1: Name + Link Toggle + Add -->
+                                        <!-- Row 1: Name + Link Toggle + Note Toggle + Add -->
                                         <div class="flex gap-2">
                                             <input 
                                                 v-model="shop.tempItemInput" 
@@ -562,6 +563,13 @@
                                                 title="Add Link"
                                             >
                                                 <i class="fas fa-link"></i>
+                                            </button>
+                                            <button 
+                                                @click="shop.showNoteInput = !shop.showNoteInput" 
+                                                :class="['px-3 rounded-xl transition-colors', shop.showNoteInput ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-50 text-gray-400 hover:bg-gray-100']"
+                                                title="Add Note"
+                                            >
+                                                <i class="fas fa-sticky-note"></i>
                                             </button>
                                             <button 
                                                 @click="addItemToShop(shop)" 
@@ -580,6 +588,20 @@
                                                 <input 
                                                     v-model="shop.tempLinkInput" 
                                                     placeholder="貼上網址..." 
+                                                    class="w-full bg-gray-50 pl-8 pr-4 py-2 rounded-xl text-xs outline-none focus:bg-white focus:ring-1 focus:ring-theme-accent/50 text-gray-600 font-sans"
+                                                >
+                                            </div>
+                                        </div>
+
+                                        <!-- Row 3: Note Input (Conditional) -->
+                                        <div v-if="shop.showNoteInput" class="animate-fade-in">
+                                            <div class="relative">
+                                                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs">
+                                                    <i class="fas fa-pen"></i>
+                                                </div>
+                                                <input 
+                                                    v-model="shop.tempNoteInput" 
+                                                    placeholder="備註 (顏色、尺寸、數量...)" 
                                                     class="w-full bg-gray-50 pl-8 pr-4 py-2 rounded-xl text-xs outline-none focus:bg-white focus:ring-1 focus:ring-theme-accent/50 text-gray-600 font-sans"
                                                 >
                                             </div>
@@ -750,11 +772,20 @@
                      </div>
                  </div>
 
-                 <!-- Shopping Item Edit Modal (NEW) -->
+                 <!-- Shopping Item Edit Modal (UPDATED) -->
                  <div v-if="showShoppingEditModal" class="space-y-6">
                      <div class="space-y-4">
                          <label class="input-label justify-center !ml-0">Item Name</label>
                          <input v-model="editForm.text" class="input-rounded rounded-3xl text-center text-lg font-serif border-none bg-theme-input" placeholder="商品名稱">
+                     </div>
+                     <div class="space-y-4">
+                         <label class="input-label justify-center !ml-0">Note</label>
+                         <div class="relative">
+                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                 <i class="fas fa-pen"></i>
+                             </div>
+                             <input v-model="editForm.note" class="input-rounded rounded-3xl pl-10 text-sm font-sans bg-theme-input" placeholder="備註">
+                         </div>
                      </div>
                      <div class="space-y-4">
                          <label class="input-label justify-center !ml-0">Link</label>
@@ -851,12 +882,12 @@
             
             // Notes & Shopping List
             const notes = ref([]); 
-            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true, tempItemInput: '', tempLinkInput: '', showLinkInput: false, isRenaming: false }]
+            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true, tempItemInput: '', tempLinkInput: '', tempNoteInput: '', showLinkInput: false, showNoteInput: false, isRenaming: false }]
             const newShopName = ref('');
             
             // Shopping Edit Modal State
             const showShoppingEditModal = ref(false);
-            const editForm = ref({ shopId: null, itemId: null, text: '', link: '' });
+            const editForm = ref({ shopId: null, itemId: null, text: '', link: '', note: '' });
 
             const exchangeRate = ref(0.21);
             const startDate = ref('');
@@ -1117,9 +1148,15 @@ service cloud.firestore {
                         expenses.value = (d.expenses||[]).map(e => ({...e, beneficiaries: e.beneficiaries || [], type: e.type || 'shared'})); 
                         notes.value = d.notes || []; 
                         
-                        // Load Shopping List - Handle Backward Compatibility
-                        // If data is flat array (old format), convert to "Uncategorized" shop
+                        // Load Shopping List - Handle Backward Compatibility & State Preservation
+                        const currentShops = shoppingList.value.reduce((acc, shop) => {
+                            acc[shop.id] = shop;
+                            return acc;
+                        }, {});
+
                         let rawShopping = d.shoppingList || [];
+                        
+                        // Migration Check
                         if (rawShopping.length > 0 && !rawShopping[0].items && !rawShopping[0].shopName) {
                              shoppingList.value = [{
                                  id: 'default_migrated',
@@ -1128,19 +1165,26 @@ service cloud.firestore {
                                  expanded: true,
                                  tempItemInput: '',
                                  tempLinkInput: '', 
+                                 tempNoteInput: '',
                                  showLinkInput: false,
+                                 showNoteInput: false,
                                  isRenaming: false
                              }];
                         } else {
-                             // Ensure props exist for new structure
-                             shoppingList.value = rawShopping.map(s => ({
-                                 ...s,
-                                 expanded: s.expanded !== undefined ? s.expanded : true,
-                                 tempItemInput: '', 
-                                 tempLinkInput: '',
-                                 showLinkInput: false,
-                                 isRenaming: false // Init renaming state
-                             }));
+                             shoppingList.value = rawShopping.map(s => {
+                                 const local = currentShops[s.id];
+                                 return {
+                                     ...s,
+                                     // Preserve UI state if local exists
+                                     expanded: local ? local.expanded : (s.expanded !== undefined ? s.expanded : true),
+                                     tempItemInput: local ? local.tempItemInput : '', 
+                                     tempLinkInput: local ? local.tempLinkInput : '',
+                                     tempNoteInput: local ? local.tempNoteInput : '',
+                                     showLinkInput: local ? local.showLinkInput : false,
+                                     showNoteInput: local ? local.showNoteInput : false,
+                                     isRenaming: local ? local.isRenaming : false
+                                 };
+                             });
                         }
 
                         startDate.value = d.startDate || ''; 
@@ -1325,7 +1369,9 @@ service cloud.firestore {
                     items: [],
                     tempItemInput: '',
                     tempLinkInput: '', // Initialize new fields
+                    tempNoteInput: '', // Initialize note
                     showLinkInput: false,
+                    showNoteInput: false,
                     expanded: true,
                     isRenaming: false
                 });
@@ -1367,11 +1413,14 @@ service cloud.firestore {
                     id: Date.now(),
                     text: shop.tempItemInput,
                     link: shop.tempLinkInput || '', // Save the link
+                    note: shop.tempNoteInput || '', // Save note
                     done: false
                 });
                 shop.tempItemInput = ''; 
                 shop.tempLinkInput = ''; // Clear link input
+                shop.tempNoteInput = ''; // Clear note input
                 shop.showLinkInput = false; // Optional: Close link input after add
+                shop.showNoteInput = false; // Optional: Close note input after add
             };
 
             // Item Edit Logic
@@ -1380,7 +1429,8 @@ service cloud.firestore {
                     shopId: shopId,
                     itemId: item.id,
                     text: item.text,
-                    link: item.link
+                    link: item.link,
+                    note: item.note
                 };
                 showShoppingEditModal.value = true;
             };
@@ -1392,6 +1442,7 @@ service cloud.firestore {
                     if (item) {
                         item.text = editForm.value.text;
                         item.link = editForm.value.link;
+                        item.note = editForm.value.note;
                     }
                 }
                 showShoppingEditModal.value = false;
