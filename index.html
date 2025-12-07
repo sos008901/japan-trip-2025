@@ -112,9 +112,27 @@
         .icon-btn-primary { width: 2rem; height: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background-color: white; border: 1px solid rgba(62, 78, 80, 0.2); color: #3E4E50; }
         .icon-btn-primary:active { background-color: #F0F2F2; transform: scale(0.9); }
 
-        .dragging { opacity: 0.8; transform: scale(1.02); z-index: 50; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-        .sort-handle { cursor: move; touch-action: none; color: #D1D5DB; padding: 1rem 0.5rem; display: flex; align-items: center; }
+        .dragging { 
+            opacity: 0.95; 
+            transform: scale(1.03); 
+            z-index: 50; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-color: #C5A059 !important;
+        }
+        /* 優化握把：設置為 pan-y 允許垂直捲動，防止鎖死 */
+        .sort-handle { 
+            cursor: grab; 
+            touch-action: pan-y; /* 關鍵修改：允許瀏覽器處理垂直捲動 */
+            color: #D1D5DB; 
+            padding: 1.5rem 0.8rem;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: color 0.2s;
+        }
         .sort-handle:active { color: #C5A059; }
+        /* 當進入拖曳模式時，游標變更 */
+        .sort-handle.active-drag { cursor: grabbing; color: #C5A059; }
 
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -270,30 +288,35 @@
                         </div>
                     </div>
 
-                    <!-- Modified: Moved touch events to the container, removed from individual items -->
-                    <div class="space-y-5 pb-20" @touchmove="onTouchDragMove($event)" @touchend="onTouchDragEnd">
+                    <!-- Touch Container Listener -->
+                    <div class="space-y-5 pb-20" 
+                         @touchmove="onTouchDragMove($event)" 
+                         @touchend="onTouchDragEnd"
+                         @mousemove="onMouseDragMove($event)"
+                         @mouseup="onMouseDragEnd">
+                         
                         <div v-if="currentDayItems.length === 0" class="py-20 text-center opacity-40">
                             <div class="w-16 h-16 border border-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"></path><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
                             </div>
                             <p class="text-xs tracking-widest font-serif">尚無行程</p>
                         </div>
-                        <!-- Modified: Removed @touchstart, @touchmove, @touchend from the card itself -->
+                        
                         <div v-for="(item, idx) in currentDayItems" :key="item.id" 
-                            class="bg-white p-5 shadow-card border-l-4 border-theme-main relative group transition-all active:scale-[0.99] rounded-3xl flex items-start gap-1"
-                            :class="{'ring-1 ring-theme-accent': expandedItemId === item.id}" 
-                            @click.stop="toggleExpand(item.id)"
-                            draggable="true"
-                            @dragstart="onDragStart($event, idx)"
-                            @dragover.prevent
-                            @drop="onDrop($event, idx)">
+                            class="bg-white p-5 shadow-card border-l-4 border-theme-main relative group transition-all rounded-3xl flex items-start gap-1 select-none"
+                            :class="{'ring-1 ring-theme-accent': expandedItemId === item.id, 'dragging': dragIndex === idx}" 
+                            @click.stop="toggleExpand(item.id)">
                             
-                            <!-- Modified: Added .prevent to stop scroll when dragging handle, only start drag here -->
-                            <div class="sort-handle" @touchstart.stop.prevent="onTouchDragStart($event, idx)" @mousedown.stop>
+                            <!-- 專屬拖曳握把 (Sort Handle) -->
+                            <!-- 使用 touchstart.stop 但移除 prevent，允許瀏覽器先判定是否為捲動 -->
+                            <div class="sort-handle flex-shrink-0" 
+                                 :class="{'active-drag': dragIndex === idx}"
+                                 @touchstart.stop="onTouchDragStart($event, idx)" 
+                                 @mousedown.stop.prevent="onMouseDragStart($event, idx)">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                             </div>
 
-                            <div class="flex-1 min-w-0 py-1">
+                            <div class="flex-1 min-w-0 py-1 transition-all">
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-baseline mb-2">
@@ -689,6 +712,7 @@
             const showWizard = ref(false);
             const showItemModal = ref(false), showExpenseModal = ref(false), showSettingsModal = ref(false), showNoteModal = ref(false), showTravelerModal = ref(false);
             const isEditing = ref(false), isNoteEditing = ref(false), isExpenseEditing = ref(false);
+            // Removed isSortingMode - always active via handle
             const expenseFilter = ref('all');
             const toast = ref({ show: false, message: '', type: 'success' });
             const confirmModal = ref({ show: false, title: '', message: '', callback: null });
@@ -758,16 +782,41 @@ service cloud.firestore {
             const dragState = ref({ isDown: false, startX: 0, scrollLeft: 0 });
             const dragIndex = ref(null);
             const dateContainer = ref(null);
+            const dragActive = ref(false); // NEW: Track if drag is active (after long press)
+            let longPressTimer = null;
 
-            const onTouchDragStart = (e, index) => { dragIndex.value = index; };
+            // Updated Touch Handlers with Long Press Logic
+            const onTouchDragStart = (e, index) => { 
+                // 這裡不馬上設定 dragIndex，而是開啟一個計時器
+                longPressTimer = setTimeout(() => {
+                    dragIndex.value = index;
+                    dragActive.value = true;
+                    // Haptic feedback if available
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }, 300); // 300ms long press to activate
+            };
+            
             const onTouchDragMove = (e) => {
+                // 如果長按還沒發生（dragActive 為 false），我們不阻止預設行為（也就是允許捲動）
+                // 但是如果手指移動了，我們就取消長按計時器
+                if (!dragActive.value) {
+                    clearTimeout(longPressTimer);
+                    return; 
+                }
+
+                // 長按成功觸發後，阻止捲動並開始拖曳
+                if(e.cancelable) e.preventDefault(); 
+                
                 if (dragIndex.value === null) return;
+                
                 const touch = e.touches[0];
                 const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.group');
                 if (!target) return;
                 
                 const children = Array.from(target.parentNode.children);
-                const newIndex = children.indexOf(target);
+                // Filter out non-item children if any (like empty state msg)
+                const itemElements = children.filter(c => c.classList.contains('group'));
+                const newIndex = itemElements.indexOf(target);
                 
                 if (newIndex !== -1 && newIndex !== dragIndex.value) {
                     const items = days.value[currentDayIndex.value].items;
@@ -776,17 +825,43 @@ service cloud.firestore {
                     dragIndex.value = newIndex;
                 }
             };
-            const onTouchDragEnd = () => { dragIndex.value = null; };
             
-            const onDragStart = (e, index) => { dragIndex.value = index; e.dataTransfer.effectAllowed = 'move'; };
-            const onDrop = (e, index) => {
-                 if (dragIndex.value !== null && dragIndex.value !== index) {
+            const onTouchDragEnd = () => { 
+                clearTimeout(longPressTimer);
+                dragIndex.value = null; 
+                dragActive.value = false;
+            };
+
+            // Mouse Drag Support (for Desktop) - Keep instant drag for mouse
+            const onMouseDragStart = (e, index) => {
+                 dragIndex.value = index;
+                 dragActive.value = true;
+                 document.body.style.cursor = 'move';
+            };
+            const onMouseDragMove = (e) => {
+                 if (dragIndex.value === null) return;
+                 const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.group');
+                 if (!target) return;
+                 
+                 const children = Array.from(target.parentNode.children);
+                 const itemElements = children.filter(c => c.classList.contains('group'));
+                 const newIndex = itemElements.indexOf(target);
+                 
+                 if (newIndex !== -1 && newIndex !== dragIndex.value) {
                      const items = days.value[currentDayIndex.value].items;
                      const [movedItem] = items.splice(dragIndex.value, 1);
-                     items.splice(index, 0, movedItem);
-                     dragIndex.value = null;
+                     items.splice(newIndex, 0, movedItem);
+                     dragIndex.value = newIndex;
                  }
             };
+            const onMouseDragEnd = () => {
+                 dragIndex.value = null;
+                 dragActive.value = false;
+                 document.body.style.cursor = '';
+            };
+            
+            const onDragStart = (e, index) => { /* HTML5 Drag Removed/Ignored */ };
+            const onDrop = (e, index) => { /* HTML5 Drop Ignored */ };
 
             const openMap = (loc) => {
                 if (!loc) return;
@@ -1192,7 +1267,8 @@ service cloud.firestore {
                 onTouchDragStart, onTouchDragMove, onTouchDragEnd, onDragStart, onDrop, dragIndex, dateContainer, onDateDragStart, onDateDragMove, onDateDragEnd, getMemberDetails, statistics, debts, toggleBeneficiary, groupedExpenses, tempHourExp, tempMinuteExp, showMemberStats, collapsedDates, toggleDateGroup,
                 showTravelerModal, openTravelerModal, editingTravelers, addTraveler, removeTraveler, saveTravelers,
                 isSyncing, permissionError, retryConnection, rulesText, copyRules, // New
-                expandedNoteId, toggleExpandNote // New for Memo Accordion
+                expandedNoteId, toggleExpandNote, // New for Memo Accordion
+                onMouseDragStart, onMouseDragMove, onMouseDragEnd // New for Desktop Drag
             };
         }
     }).mount('#app');
