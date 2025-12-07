@@ -540,7 +540,7 @@
                     <button @click="saveItem" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform mt-4">SAVE EVENT</button>
                 </div>
                 
-                <!-- Expense Form -->
+                <!-- Expense Form (With Delete) -->
                 <div v-if="showExpenseModal" class="space-y-6">
                      <div class="space-y-4">
                          <label class="input-label justify-center !ml-0">ITEM</label>
@@ -603,7 +603,10 @@
                          </div>
                      </div>
 
-                     <button @click="saveExpense" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/30 active:scale-[0.98] transition-transform mt-2">CONFIRM</button>
+                     <div class="flex gap-3 mt-4">
+                         <button v-if="isExpenseEditing" @click="confirmDeleteExpense(formExpense.id)" class="w-1/3 py-4 bg-white border border-theme-danger/30 text-theme-danger text-xs font-bold tracking-[0.2em] rounded-3xl active:scale-[0.98] transition hover:bg-theme-danger/5">DELETE</button>
+                         <button @click="saveExpense" :class="[isExpenseEditing ? 'w-2/3' : 'w-full', 'py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/30 active:scale-[0.98] transition-transform']">CONFIRM</button>
+                     </div>
                 </div>
                  
                  <!-- Traveler Management Modal -->
@@ -1046,7 +1049,12 @@ service cloud.firestore {
             const addDay = () => { days.value.push({ items: [] }); currentDayIndex.value = days.value.length - 1; };
             const confirmDeleteDay = () => days.value.length <= 1 ? showToast('最少保留一天') : triggerConfirm('刪除', `刪除 Day ${currentDayIndex.value+1}?`, () => { days.value.splice(currentDayIndex.value, 1); currentDayIndex.value = Math.min(currentDayIndex.value, days.value.length-1); });
             const confirmDeleteItem = (id) => triggerConfirm('刪除', '確定刪除此行程？', () => days.value[currentDayIndex.value].items = days.value[currentDayIndex.value].items.filter(i => i.id !== id));
-            const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => expenses.value = expenses.value.filter(e => e.id !== id));
+            
+            // Updated: Delete expense and close modal
+            const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => {
+                expenses.value = expenses.value.filter(e => e.id !== id);
+                showExpenseModal.value = false;
+            });
             
             // Modified confirmDeleteNote to close modal
             const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => {
