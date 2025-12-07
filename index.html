@@ -242,7 +242,7 @@
             </header>
 
             <!-- Main Content -->
-            <main class="flex-1 overflow-y-auto overflow-x-hidden pb-40 relative bg-washi" @click="expandedItemId = null">
+            <main class="flex-1 overflow-y-auto overflow-x-hidden pb-40 relative bg-washi" @click="expandedItemId = null; expandedNoteId = null">
                 
                 <!-- SCHEDULE TAB -->
                 <div v-if="currentTab === 'schedule'" class="p-5 min-h-full">
@@ -270,13 +270,15 @@
                         </div>
                     </div>
 
-                    <div class="space-y-5 pb-20">
+                    <!-- Modified: Moved touch events to the container, removed from individual items -->
+                    <div class="space-y-5 pb-20" @touchmove="onTouchDragMove($event)" @touchend="onTouchDragEnd">
                         <div v-if="currentDayItems.length === 0" class="py-20 text-center opacity-40">
                             <div class="w-16 h-16 border border-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"></path><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
                             </div>
                             <p class="text-xs tracking-widest font-serif">尚無行程</p>
                         </div>
+                        <!-- Modified: Removed @touchstart, @touchmove, @touchend from the card itself -->
                         <div v-for="(item, idx) in currentDayItems" :key="item.id" 
                             class="bg-white p-5 shadow-card border-l-4 border-theme-main relative group transition-all active:scale-[0.99] rounded-3xl flex items-start gap-1"
                             :class="{'ring-1 ring-theme-accent': expandedItemId === item.id}" 
@@ -284,13 +286,10 @@
                             draggable="true"
                             @dragstart="onDragStart($event, idx)"
                             @dragover.prevent
-                            @drop="onDrop($event, idx)"
-                            @touchstart="onTouchDragStart($event, idx)"
-                            @touchmove="onTouchDragMove($event)"
-                            @touchend="onTouchDragEnd">
+                            @drop="onDrop($event, idx)">
                             
-                            <!-- 拖曳手把 -->
-                            <div class="sort-handle" @touchstart.stop="onTouchDragStart($event, idx)" @mousedown.stop>
+                            <!-- Modified: Added .prevent to stop scroll when dragging handle, only start drag here -->
+                            <div class="sort-handle" @touchstart.stop.prevent="onTouchDragStart($event, idx)" @mousedown.stop>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                             </div>
 
@@ -415,15 +414,32 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: MEMO -->
+                <!-- TAB 3: MEMO (Modified: Accordion Style) -->
                 <div v-if="currentTab === 'memo'" class="p-6 animate-fade-in">
                     <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest border-b pb-4 border-gray-200">筆記</h2>
                     <div class="grid gap-4 pb-20">
                         <div v-if="notes.length === 0" class="text-center py-10 text-gray-400 text-xs font-serif">點擊右下角新增筆記</div>
-                        <div v-for="note in notes" :key="note.id" @click="editNote(note)" class="bg-white p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-transparent hover:border-theme-accent/30 btn-base !block text-left rounded-3xl group">
+                        
+                        <div v-for="note in notes" :key="note.id" 
+                             @click.stop="toggleExpandNote(note.id)" 
+                             class="bg-white p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-transparent hover:border-theme-accent/30 !block text-left rounded-3xl group relative">
+                            
                             <div class="flex justify-between items-center">
-                                <h3 class="font-bold text-theme-main text-lg tracking-wider truncate pr-4">{{ note.title || '未命名' }}</h3>
-                                <i class="fas fa-chevron-right text-gray-300 group-hover:text-theme-accent transition"></i>
+                                <h3 class="font-bold text-theme-main text-lg tracking-wider truncate pr-8">{{ note.title || '未命名' }}</h3>
+                                <!-- Expand Icon -->
+                                <div :class="['w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center transition-transform duration-300', expandedNoteId === note.id ? 'rotate-180 bg-theme-accent text-white' : 'text-gray-300']">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                            </div>
+
+                            <!-- Expanded Content -->
+                            <div v-if="expandedNoteId === note.id" class="mt-4 pt-4 border-t border-dashed border-gray-100 animate-fade-in">
+                                <div class="text-sm text-gray-600 font-sans leading-relaxed whitespace-pre-wrap break-words" v-html="renderNote(note.content)"></div>
+                                <div class="mt-4 flex justify-end">
+                                    <button @click.stop="editNote(note)" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-theme-main hover:text-white rounded-full text-xs font-bold text-gray-500 transition-colors">
+                                        <i class="fas fa-pen"></i> 編輯
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -573,11 +589,16 @@
                      <button @click="saveTravelers" class="w-full py-4 bg-theme-main text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg mt-2">SAVE CHANGES</button>
                  </div>
 
-                 <!-- Note Form -->
+                 <!-- Note Form (Modified) -->
                  <div v-if="showNoteModal" class="space-y-4">
                      <input v-model="formNote.title" class="w-full bg-transparent border-b border-theme-border p-2 text-xl font-bold font-serif outline-none focus:border-theme-accent transition-colors text-theme-main" placeholder="標題">
                      <textarea v-model="formNote.content" class="w-full bg-transparent border-none p-2 text-sm h-48 outline-none resize-none leading-relaxed placeholder-gray-300 text-theme-main" placeholder="寫下內容..."></textarea>
-                     <button @click="saveNote" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform mt-2">SAVE NOTE</button>
+                     
+                     <div class="flex gap-3 mt-2">
+                         <!-- Delete Button added here -->
+                         <button v-if="isNoteEditing" @click="confirmDeleteNote(formNote.id)" class="w-1/3 py-4 bg-white border border-theme-danger/30 text-theme-danger text-xs font-bold tracking-[0.2em] rounded-3xl active:scale-[0.98] transition hover:bg-theme-danger/5">DELETE</button>
+                         <button @click="saveNote" :class="[isNoteEditing ? 'w-2/3' : 'w-full', 'py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform']">SAVE NOTE</button>
+                     </div>
                  </div>
                  
                  <!-- Settings -->
@@ -672,6 +693,7 @@
             const toast = ref({ show: false, message: '', type: 'success' });
             const confirmModal = ref({ show: false, title: '', message: '', callback: null });
             const expandedItemId = ref(null);
+            const expandedNoteId = ref(null); // NEW: Track expanded memo
             const expandedDates = ref([]); 
             const editingTravelers = ref([]);
 
@@ -723,6 +745,7 @@ service cloud.firestore {
 
             // UI Toggles
             const toggleExpand = (id) => expandedItemId.value = expandedItemId.value === id ? null : id;
+            const toggleExpandNote = (id) => expandedNoteId.value = expandedNoteId.value === id ? null : id; // NEW
             const toggleDateGroup = (date) => {
                  const idx = collapsedDates.value.indexOf(date);
                  if (idx > -1) collapsedDates.value.splice(idx, 1);
@@ -776,7 +799,9 @@ service cloud.firestore {
             const renderNote = (note) => {
                 if (!note) return '';
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
-                return note.replace(urlRegex, '<a href="$1" target="_blank" class="text-theme-accent underline" onclick="event.stopPropagation()">連結 Link</a>');
+                return note.replace(urlRegex, (url) => {
+                    return `<a href="${url}" target="_blank" class="text-theme-accent underline break-all" onclick="event.stopPropagation()">${url}</a>`;
+                });
             };
 
             const showToast = (msg) => { toast.value = { show: true, message: msg, type: 'success' }; setTimeout(() => toast.value.show = false, 3000); };
@@ -940,7 +965,12 @@ service cloud.firestore {
             const confirmDeleteDay = () => days.value.length <= 1 ? showToast('最少保留一天') : triggerConfirm('刪除', `刪除 Day ${currentDayIndex.value+1}?`, () => { days.value.splice(currentDayIndex.value, 1); currentDayIndex.value = Math.min(currentDayIndex.value, days.value.length-1); });
             const confirmDeleteItem = (id) => triggerConfirm('刪除', '確定刪除此行程？', () => days.value[currentDayIndex.value].items = days.value[currentDayIndex.value].items.filter(i => i.id !== id));
             const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => expenses.value = expenses.value.filter(e => e.id !== id));
-            const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => notes.value = notes.value.filter(n => n.id !== id));
+            
+            // Modified confirmDeleteNote to close modal
+            const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => {
+                notes.value = notes.value.filter(n => n.id !== id);
+                showNoteModal.value = false;
+            });
 
             const onFabClick = () => {
                 if(currentTab.value === 'schedule') { formItem.value = { id: Date.now(), time: '09:00', title: '', location: '', note: '' }; tempHour.value='09'; tempMinute.value='00'; isEditing.value = false; showItemModal.value = true; }
@@ -1161,7 +1191,8 @@ service cloud.firestore {
                 toggleExpand, expandedItemId, isEditing, isExpenseEditing, isNoteEditing,
                 onTouchDragStart, onTouchDragMove, onTouchDragEnd, onDragStart, onDrop, dragIndex, dateContainer, onDateDragStart, onDateDragMove, onDateDragEnd, getMemberDetails, statistics, debts, toggleBeneficiary, groupedExpenses, tempHourExp, tempMinuteExp, showMemberStats, collapsedDates, toggleDateGroup,
                 showTravelerModal, openTravelerModal, editingTravelers, addTraveler, removeTraveler, saveTravelers,
-                isSyncing, permissionError, retryConnection, rulesText, copyRules // New
+                isSyncing, permissionError, retryConnection, rulesText, copyRules, // New
+                expandedNoteId, toggleExpandNote // New for Memo Accordion
             };
         }
     }).mount('#app');
