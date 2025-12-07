@@ -319,22 +319,21 @@
                             <div class="flex-1 min-w-0 py-1 transition-all">
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-baseline mb-2">
+                                        <div class="flex items-baseline mb-1">
                                             <span class="text-xs font-display font-bold text-theme-accent mr-3">{{ item.time }}</span>
                                             <h3 class="text-lg font-serif font-bold text-theme-main tracking-wide">{{ item.title }}</h3>
-                                            
-                                            <!-- Added Note Indicator (Triangle) -->
-                                            <div v-if="item.note" class="ml-2 self-center">
-                                                 <svg :class="['w-3 h-3 text-gray-300 transition-transform duration-200', expandedItemId === item.id ? 'rotate-180 text-theme-accent' : '']" viewBox="0 0 24 24" fill="currentColor">
-                                                     <path d="M7 10l5 5 5-5z"></path>
-                                                 </svg>
-                                            </div>
-
                                         </div>
                                         <div v-if="item.location" class="flex items-center text-xs text-gray-500 font-sans cursor-pointer hover:text-theme-accent transition" @click.stop="openMap(item.location)">
                                             <svg class="w-3 h-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                             <span class="truncate underline decoration-dotted underline-offset-2">{{ item.location }}</span>
                                         </div>
+                                        
+                                        <!-- Note Preview (Visible when collapsed) -->
+                                        <div v-if="item.note && expandedItemId !== item.id" class="mt-2 flex items-center text-[11px] text-gray-400 font-sans">
+                                            <svg class="w-3 h-3 mr-1.5 text-theme-accent opacity-70 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                            <span class="truncate">{{ item.note }}</span>
+                                        </div>
+
                                     </div>
                                     <button @click.stop="confirmDeleteItem(item.id)" class="text-gray-300 hover:text-theme-danger p-2 -mr-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                                 </div>
