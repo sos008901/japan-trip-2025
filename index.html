@@ -535,6 +535,7 @@
                                 <div class="p-4" v-show="shop.expanded">
                                     <!-- Items List -->
                                     <div class="space-y-2 mb-4">
+                                        <!-- Update the v-for loop in shopping list items to correctly iterate shop.tempImages -->
                                         <div v-if="!shop.items || shop.items.length === 0" class="text-center py-2 text-gray-300 text-[10px]">無商品</div>
                                         <div v-for="item in shop.items" :key="item.id" class="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-xl transition-colors">
                                             <div class="flex items-center flex-1 cursor-pointer min-w-0" @click="toggleItem(shop.id, item)">
@@ -542,8 +543,13 @@
                                                     <i v-if="item.done" class="fas fa-check text-white text-[10px]"></i>
                                                 </div>
                                                 
-                                                <!-- Image Thumbnail -->
-                                                <img v-if="item.image" :src="item.image" class="thumb-sm mr-3 bg-gray-100" @click.stop="viewImage(item.image)">
+                                                <!-- Image Thumbnail (Multiple) -->
+                                                <div v-if="item.images && item.images.length > 0" class="flex -space-x-2 mr-3 overflow-hidden">
+                                                    <img v-for="(img, imgIdx) in item.images.slice(0, 3)" :key="imgIdx" :src="img" class="thumb-xs bg-gray-100 ring-2 ring-white" @click.stop="viewImage(img)">
+                                                    <div v-if="item.images.length > 3" class="thumb-xs bg-gray-100 ring-2 ring-white flex items-center justify-center text-[10px] text-gray-500 font-bold">+{{item.images.length-3}}</div>
+                                                </div>
+                                                <!-- Fallback for old single image -->
+                                                <img v-else-if="item.image" :src="item.image" class="thumb-xs mr-3 bg-gray-100" @click.stop="viewImage(item.image)">
 
                                                 <div class="flex-1 min-w-0 mr-2">
                                                     <div :class="['text-sm font-sans transition-all break-words', item.done ? 'text-gray-300 line-through' : 'text-theme-main']">
@@ -611,11 +617,11 @@
                                             </button>
                                         </div>
                                         
-                                        <!-- Temp Image Preview in Add Area -->
-                                        <div v-if="shop.tempImages && shop.tempImages.length > 0" class="flex gap-2 mt-2 overflow-x-auto">
-                                            <div v-for="(img, idx) in shop.tempImages" :key="idx" class="relative inline-block flex-shrink-0">
+                                        <!-- Temp Image Preview in Add Area (Updated for Array) -->
+                                        <div v-if="shop.tempImages && shop.tempImages.length > 0" class="flex gap-2 mt-2 overflow-x-auto pb-1 no-scrollbar">
+                                            <div v-for="(img, i) in shop.tempImages" :key="i" class="relative inline-block flex-shrink-0">
                                                 <img :src="img" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
-                                                <button @click="shop.tempImages.splice(idx, 1)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                                                <button @click="shop.tempImages.splice(i, 1)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
                                             </div>
                                         </div>
 
