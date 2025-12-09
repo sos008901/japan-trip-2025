@@ -601,7 +601,7 @@
                                                 <i class="fas fa-camera"></i>
                                             </button>
                                             <!-- Hidden File Input for Shop Item -->
-                                            <input type="file" :ref="'shopFile_' + shop.id" class="hidden" accept="image/*" @change="onShopItemImageChange($event, shop)">
+                                            <input type="file" :ref="'shopFile_' + shop.id" class="hidden" accept="image/*" multiple @change="onShopItemImageChange($event, shop)">
 
                                             <button 
                                                 @click="addItemToShop(shop)" 
@@ -612,9 +612,11 @@
                                         </div>
                                         
                                         <!-- Temp Image Preview in Add Area -->
-                                        <div v-if="shop.tempImage" class="relative inline-block mt-2">
-                                            <img :src="shop.tempImage" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
-                                            <button @click="shop.tempImage = ''" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                                        <div v-if="shop.tempImages && shop.tempImages.length > 0" class="flex gap-2 mt-2 overflow-x-auto">
+                                            <div v-for="(img, idx) in shop.tempImages" :key="idx" class="relative inline-block flex-shrink-0">
+                                                <img :src="img" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
+                                                <button @click="shop.tempImages.splice(idx, 1)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                                            </div>
                                         </div>
 
                                         <!-- Row 2: Link Input (Conditional) -->
@@ -955,12 +957,12 @@
             
             // Notes & Shopping List
             const notes = ref([]); 
-            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true, tempItemInput: '', tempLinkInput: '', tempNoteInput: '', showLinkInput: false, showNoteInput: false, isRenaming: false, tempImage: '' }]
+            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true, tempItemInput: '', tempLinkInput: '', tempNoteInput: '', showLinkInput: false, showNoteInput: false, isRenaming: false, tempImages: [] }]
             const newShopName = ref('');
             
             // Shopping Edit Modal State
             const showShoppingEditModal = ref(false);
-            const editForm = ref({ shopId: null, itemId: null, text: '', link: '', note: '', image: '' });
+            const editForm = ref({ shopId: null, itemId: null, text: '', link: '', note: '', images: [] });
             const viewingImage = ref(null); // Full screen viewer
 
             const exchangeRate = ref(0.21);
@@ -989,7 +991,7 @@
             const tempHour = ref('09'), tempMinute = ref('00'), tempHourExp = ref('09'), tempMinuteExp = ref('00');
             const formItem = ref({ id: null, time: '', title: '', location: '', note: '' });
             const formExpense = ref({ id: null, title: '', amount: '', payer: travelers.value[0], beneficiaries: [], type: 'shared', date: '', time: '', note: '' });
-            const formNote = ref({ id: null, title: '', content: '', updatedAt: '', image: '' });
+            const formNote = ref({ id: null, title: '', content: '', updatedAt: '', images: [] });
             
             const rulesText = `rules_version = '2';
 service cloud.firestore {
