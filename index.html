@@ -996,7 +996,7 @@ service cloud.firestore {
 
             const instance = getCurrentInstance();
 
-            // Image Compression
+            // Image Compression (Smart Quality Adjustment)
             const compressImage = (file) => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -1004,23 +1004,40 @@ service cloud.firestore {
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            // Increased resolution for better clarity on mobile
-                            const MAX_WIDTH = 1200; 
-                            const MAX_HEIGHT = 1200;
+                            
+                            // Increase Max Resolution for better mobile view
+                            // 1600px is a good balance for full-screen mobile viewing
+                            const MAX_DIM = 1600; 
                             let width = img.width;
                             let height = img.height;
                             
                             if (width > height) {
-                                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                                if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
                             } else {
-                                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                                if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; }
                             }
+                            
                             canvas.width = width;
                             canvas.height = height;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
-                            // Increased quality to 0.8 (80%)
-                            resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+                            
+                            // Start with high quality (0.9)
+                            let quality = 0.9;
+                            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            
+                            // Check size: Firestore document limit is 1MB.
+                            // Base64 length * 0.75 is approx file size in bytes.
+                            // We target < 900KB safe limit (~1.2M characters) to leave room for text data.
+                            const MAX_CHAR_LENGTH = 1200000; 
+                            
+                            // Loop to reduce quality only if necessary
+                            while (dataUrl.length > MAX_CHAR_LENGTH && quality > 0.5) {
+                                quality -= 0.1;
+                                dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            }
+                            
+                            resolve(dataUrl); 
                         };
                         img.src = e.target.result;
                     };
