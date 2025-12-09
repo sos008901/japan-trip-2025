@@ -497,8 +497,8 @@
                         
                         <!-- Add New Shop -->
                         <div class="flex gap-2 mb-6">
-                            <input v-model="newShopName" @keyup.enter="addShop" placeholder="新增店家名稱..." class="input-rounded !py-3 !rounded-2xl shadow-sm border border-theme-accent/10 focus:border-theme-accent">
-                            <button @click="addShop" class="bg-theme-main text-white w-12 rounded-2xl shadow-lg shadow-theme-main/20 flex items-center justify-center active:scale-95 transition-transform">
+                            <input v-model="newShopName" @keyup.enter="addShop" placeholder="新增店家名稱..." class="input-rounded !py-3 !rounded-2xl shadow-sm border border-theme-accent/10 focus:border-theme-accent flex-1 min-w-0">
+                            <button @click="addShop" class="bg-theme-main text-white w-12 rounded-2xl shadow-lg shadow-theme-main/20 flex items-center justify-center active:scale-95 transition-transform flex-shrink-0">
                                 <i class="fas fa-store"></i>
                             </button>
                         </div>
@@ -575,25 +575,25 @@
                                                 v-model="shop.tempItemInput" 
                                                 @keyup.enter="addItemToShop(shop)" 
                                                 placeholder="新增商品..." 
-                                                class="w-full bg-gray-50 px-4 py-2 rounded-xl text-sm outline-none focus:bg-white focus:ring-1 focus:ring-theme-accent/50 transition-all"
+                                                class="flex-1 min-w-0 bg-gray-50 px-4 py-2 rounded-xl text-sm outline-none focus:bg-white focus:ring-1 focus:ring-theme-accent/50 transition-all"
                                             >
                                             <button 
                                                 @click="shop.showLinkInput = !shop.showLinkInput" 
-                                                :class="['px-3 rounded-xl transition-colors', shop.showLinkInput ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-50 text-gray-400 hover:bg-gray-100']"
+                                                :class="['px-3 rounded-xl transition-colors flex-shrink-0', shop.showLinkInput ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-50 text-gray-400 hover:bg-gray-100']"
                                                 title="Add Link"
                                             >
                                                 <i class="fas fa-link"></i>
                                             </button>
                                             <button 
                                                 @click="shop.showNoteInput = !shop.showNoteInput" 
-                                                :class="['px-3 rounded-xl transition-colors', shop.showNoteInput ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-50 text-gray-400 hover:bg-gray-100']"
+                                                :class="['px-3 rounded-xl transition-colors flex-shrink-0', shop.showNoteInput ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-50 text-gray-400 hover:bg-gray-100']"
                                                 title="Add Note"
                                             >
                                                 <i class="fas fa-sticky-note"></i>
                                             </button>
                                             <button 
                                                 @click="triggerFileInput('shopFile_' + shop.id)" 
-                                                class="px-3 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
+                                                class="px-3 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors flex-shrink-0"
                                                 title="Add Image"
                                             >
                                                 <i class="fas fa-camera"></i>
@@ -603,7 +603,7 @@
 
                                             <button 
                                                 @click="addItemToShop(shop)" 
-                                                class="bg-theme-main text-white px-4 rounded-xl shadow-md shadow-theme-main/20 active:scale-95 transition-transform"
+                                                class="bg-theme-main text-white px-4 rounded-xl shadow-md shadow-theme-main/20 active:scale-95 transition-transform flex-shrink-0"
                                             >
                                                 <i class="fas fa-plus"></i>
                                             </button>
