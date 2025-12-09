@@ -168,6 +168,7 @@
         /* Image Styles */
         .img-preview { width: 100%; height: 160px; object-fit: cover; border-radius: 1rem; margin-top: 0.5rem; border: 1px solid #eee; }
         .thumb-sm { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; flex-shrink: 0; }
+        .thumb-xs { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -478,8 +479,9 @@
 
                             <!-- Expanded Content -->
                             <div v-if="expandedNoteId === note.id" class="mt-4 pt-4 border-t border-dashed border-gray-100 animate-fade-in">
-                                <div v-if="note.image" class="mb-4">
-                                    <img :src="note.image" class="w-full h-48 object-cover rounded-xl border border-gray-100 cursor-zoom-in" @click.stop="viewImage(note.image)">
+                                <!-- Horizontal Scroll for Note Images -->
+                                <div v-if="note.images && note.images.length > 0" class="mb-4 flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                    <img v-for="(img, i) in note.images" :key="i" :src="img" class="h-32 rounded-lg border border-gray-100 object-cover flex-shrink-0 cursor-zoom-in" @click.stop="viewImage(img)">
                                 </div>
                                 <div class="text-sm text-gray-600 font-sans leading-relaxed whitespace-pre-wrap break-words" v-html="renderNote(note.content)"></div>
                                 <div class="mt-4 flex justify-end">
@@ -800,18 +802,20 @@
                  <div v-if="showNoteModal" class="space-y-4">
                      <input v-model="formNote.title" class="w-full bg-transparent border-b border-theme-border p-2 text-xl font-bold font-serif outline-none focus:border-theme-accent transition-colors text-theme-main" placeholder="標題">
                      
-                     <!-- Image Upload for Note -->
+                     <!-- Image Upload for Note (Multiple) -->
                      <div class="flex items-center gap-2">
                          <button @click="triggerFileInput('noteFile')" class="px-4 py-2 bg-gray-50 text-gray-400 rounded-xl text-xs hover:bg-gray-100 flex items-center gap-2">
                              <i class="fas fa-camera"></i> 加入圖片
                          </button>
-                         <input type="file" ref="noteFile" class="hidden" accept="image/*" @change="onNoteImageChange">
+                         <input type="file" ref="noteFile" class="hidden" accept="image/*" multiple @change="onNoteImageChange">
                      </div>
                      
-                     <!-- Preview -->
-                     <div v-if="formNote.image" class="relative inline-block">
-                         <img :src="formNote.image" class="img-preview object-contain bg-gray-50">
-                         <button @click="formNote.image = ''" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                     <!-- Preview List -->
+                     <div v-if="formNote.images && formNote.images.length > 0" class="flex gap-2 overflow-x-auto pb-2">
+                         <div v-for="(img, idx) in formNote.images" :key="idx" class="relative flex-shrink-0">
+                             <img :src="img" class="h-32 w-32 object-cover rounded-lg border border-gray-200">
+                             <button @click="formNote.images.splice(idx, 1)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                         </div>
                      </div>
 
                      <textarea v-model="formNote.content" class="w-full bg-transparent border-none p-2 text-sm h-48 outline-none resize-none leading-relaxed placeholder-gray-300 text-theme-main" placeholder="寫下內容..."></textarea>
@@ -830,18 +834,20 @@
                          <input v-model="editForm.text" class="input-rounded rounded-3xl text-center text-lg font-serif border-none bg-theme-input" placeholder="商品名稱">
                      </div>
                      
-                     <!-- Edit Image -->
+                     <!-- Edit Images (Multiple) -->
                      <div class="space-y-2">
-                         <label class="input-label justify-center !ml-0">Image</label>
+                         <label class="input-label justify-center !ml-0">Images</label>
                          <div class="flex flex-col items-center">
-                             <div v-if="editForm.image" class="relative mb-2">
-                                 <img :src="editForm.image" class="h-32 rounded-lg border border-gray-200">
-                                 <button @click="editForm.image = ''" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                             <div v-if="editForm.images && editForm.images.length > 0" class="flex gap-2 overflow-x-auto w-full justify-center mb-2">
+                                 <div v-for="(img, idx) in editForm.images" :key="idx" class="relative flex-shrink-0">
+                                     <img :src="img" class="h-24 rounded-lg border border-gray-200">
+                                     <button @click="editForm.images.splice(idx, 1)" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-times"></i></button>
+                                 </div>
                              </div>
                              <button @click="triggerFileInput('editItemFile')" class="px-4 py-2 bg-gray-50 text-gray-400 rounded-xl text-xs hover:bg-gray-100 flex items-center gap-2">
-                                 <i class="fas fa-camera"></i> {{ editForm.image ? '更換圖片' : '上傳圖片' }}
+                                 <i class="fas fa-camera"></i> 上傳圖片
                              </button>
-                             <input type="file" ref="editItemFile" class="hidden" accept="image/*" @change="onEditItemImageChange">
+                             <input type="file" ref="editItemFile" class="hidden" accept="image/*" multiple @change="onEditItemImageChange">
                          </div>
                      </div>
 
@@ -1241,9 +1247,14 @@ service cloud.firestore {
 
                         days.value = d.days || [{items:[]}]; 
                         expenses.value = (d.expenses||[]).map(e => ({...e, beneficiaries: e.beneficiaries || [], type: e.type || 'shared'})); 
-                        notes.value = d.notes || []; 
                         
-                        // Load Shopping List with State Preservation
+                        // Parse Notes: Migration Logic for Images Array
+                        notes.value = (d.notes || []).map(n => ({
+                            ...n,
+                            images: n.images || (n.image ? [n.image] : [])
+                        }));
+                        
+                        // Load Shopping List with State Preservation & Migration
                         const currentShops = shoppingList.value.reduce((acc, shop) => {
                             acc[shop.id] = shop;
                             return acc;
@@ -1252,12 +1263,13 @@ service cloud.firestore {
                         let rawShopping = d.shoppingList || [];
                         
                         if (rawShopping.length > 0 && !rawShopping[0].items && !rawShopping[0].shopName) {
+                             // Old flat list migration
                              shoppingList.value = [{
                                  id: 'default_migrated',
                                  shopName: '未分類項目',
                                  items: rawShopping,
                                  expanded: true,
-                                 tempItemInput: '', tempLinkInput: '', tempNoteInput: '', tempImage: '',
+                                 tempItemInput: '', tempLinkInput: '', tempNoteInput: '', tempImages: [],
                                  showLinkInput: false, showNoteInput: false, isRenaming: false
                              }];
                         } else {
@@ -1265,11 +1277,15 @@ service cloud.firestore {
                                  const local = currentShops[s.id];
                                  return {
                                      ...s,
+                                     items: (s.items || []).map(i => ({
+                                         ...i,
+                                         images: i.images || (i.image ? [i.image] : [])
+                                     })),
                                      expanded: local ? local.expanded : (s.expanded !== undefined ? s.expanded : true),
                                      tempItemInput: local ? local.tempItemInput : '', 
                                      tempLinkInput: local ? local.tempLinkInput : '',
                                      tempNoteInput: local ? local.tempNoteInput : '',
-                                     tempImage: local ? local.tempImage : '', // Preserve temp image
+                                     tempImages: local ? local.tempImages : [], // Preserve temp images
                                      showLinkInput: local ? local.showLinkInput : false,
                                      showNoteInput: local ? local.showNoteInput : false,
                                      isRenaming: local ? local.isRenaming : false
@@ -1350,23 +1366,35 @@ service cloud.firestore {
             };
             
             const onNoteImageChange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    formNote.value.image = await compressImage(file);
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    for (let i = 0; i < files.length; i++) {
+                         const compressed = await compressImage(files[i]);
+                         if(!formNote.value.images) formNote.value.images = [];
+                         formNote.value.images.push(compressed);
+                    }
                 }
             };
 
             const onShopItemImageChange = async (e, shop) => {
-                const file = e.target.files[0];
-                if (file) {
-                    shop.tempImage = await compressImage(file);
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    if(!shop.tempImages) shop.tempImages = [];
+                    for (let i = 0; i < files.length; i++) {
+                        const compressed = await compressImage(files[i]);
+                        shop.tempImages.push(compressed);
+                    }
                 }
             };
             
             const onEditItemImageChange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    editForm.value.image = await compressImage(file);
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    if(!editForm.value.images) editForm.value.images = [];
+                    for (let i = 0; i < files.length; i++) {
+                        const compressed = await compressImage(files[i]);
+                        editForm.value.images.push(compressed);
+                    }
                 }
             };
             
@@ -1392,7 +1420,7 @@ service cloud.firestore {
                     isExpenseEditing.value = false; 
                     showExpenseModal.value = true; 
                 }
-                if(currentTab.value === 'memo') { formNote.value = { id: Date.now(), title: '', content: '', image: '' }; isNoteEditing.value = false; showNoteModal.value = true; }
+                if(currentTab.value === 'memo') { formNote.value = { id: Date.now(), title: '', content: '', images: [] }; isNoteEditing.value = false; showNoteModal.value = true; }
             };
 
             const saveItem = () => {
@@ -1448,7 +1476,7 @@ service cloud.firestore {
                 if (!newShopName.value.trim()) return;
                 shoppingList.value.push({
                     id: Date.now(), shopName: newShopName.value, items: [],
-                    tempItemInput: '', tempLinkInput: '', tempNoteInput: '', tempImage: '',
+                    tempItemInput: '', tempLinkInput: '', tempNoteInput: '', tempImages: [],
                     showLinkInput: false, showNoteInput: false, expanded: true, isRenaming: false
                 });
                 newShopName.value = '';
@@ -1466,16 +1494,16 @@ service cloud.firestore {
                     text: shop.tempItemInput,
                     link: shop.tempLinkInput || '',
                     note: shop.tempNoteInput || '',
-                    image: shop.tempImage || '',
+                    images: shop.tempImages || [],
                     done: false
                 });
                 // Reset inputs
-                shop.tempItemInput = ''; shop.tempLinkInput = ''; shop.tempNoteInput = ''; shop.tempImage = '';
+                shop.tempItemInput = ''; shop.tempLinkInput = ''; shop.tempNoteInput = ''; shop.tempImages = [];
                 shop.showLinkInput = false; shop.showNoteInput = false;
             };
 
             const openEditItemModal = (shopId, item) => {
-                editForm.value = { shopId: shopId, itemId: item.id, text: item.text, link: item.link, note: item.note, image: item.image };
+                editForm.value = { shopId: shopId, itemId: item.id, text: item.text, link: item.link, note: item.note, images: [...(item.images || [])] };
                 showShoppingEditModal.value = true;
             };
 
@@ -1487,7 +1515,7 @@ service cloud.firestore {
                         item.text = editForm.value.text;
                         item.link = editForm.value.link;
                         item.note = editForm.value.note;
-                        item.image = editForm.value.image;
+                        item.images = editForm.value.images;
                     }
                 }
                 showShoppingEditModal.value = false;
