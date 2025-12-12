@@ -119,10 +119,9 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             border-color: #C5A059 !important;
         }
-        /* 優化握把：設置為 pan-y 允許垂直捲動，防止鎖死 */
         .sort-handle { 
             cursor: grab; 
-            touch-action: pan-y; /* 關鍵修改：允許瀏覽器處理垂直捲動 */
+            touch-action: pan-y;
             color: #D1D5DB; 
             padding: 1.5rem 0.8rem;
             display: flex; 
@@ -131,7 +130,6 @@
             transition: color 0.2s;
         }
         .sort-handle:active { color: #C5A059; }
-        /* 當進入拖曳模式時，游標變更 */
         .sort-handle.active-drag { cursor: grabbing; color: #C5A059; }
 
         ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -140,7 +138,6 @@
         ::-webkit-scrollbar-thumb:hover { background: rgba(197, 160, 89, 0.8); }
         * { scrollbar-width: thin; scrollbar-color: rgba(197, 160, 89, 0.4) transparent; }
 
-        /* 記帳模式切換按鈕 */
         .mode-btn { flex: 1; font-size: 12px; font-weight: bold; border-radius: 1rem; transition: all 0.3s; text-align: center; padding: 0.8rem 0; color: #9CA3AF; border: 1px solid #F0F2F2; }
         .mode-btn.active { background-color: #C5A059; color: white; border-color: #C5A059; box-shadow: 0 4px 10px rgba(197, 160, 89, 0.3); }
 
@@ -157,7 +154,6 @@
             height: 100%;
         }
         
-        /* 雲端狀態指示燈 */
         .cloud-status { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: 20px; z-index: 50; font-size: 10px; color: #C5A059; opacity: 0.6; display: flex; align-items: center; gap: 5px; }
         .cloud-status.syncing { opacity: 1; animation: pulse 1.5s infinite; }
         .cloud-status.error { opacity: 1; color: #A65652; font-weight: bold; }
@@ -165,7 +161,6 @@
         
         .code-block { background: #eee; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; text-align: left; margin: 10px 0; color: #333; border: 1px solid #ccc; }
 
-        /* Image Styles */
         .img-preview { width: 100%; height: 160px; object-fit: cover; border-radius: 1rem; margin-top: 0.5rem; border: 1px solid #eee; }
         .thumb-sm { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; flex-shrink: 0; }
         .thumb-xs { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; flex-shrink: 0; }
@@ -205,7 +200,7 @@
             </div>
         </transition>
 
-        <!-- Permission Error Alert (Enhanced) -->
+        <!-- Permission Error Alert -->
         <div v-if="permissionError" class="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
             <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -215,7 +210,6 @@
                 <p class="text-xs text-gray-600 mb-4 leading-relaxed">
                     這是因為 Firebase 的「安全規則」擋住了連線。<br>請複製下方的規則並貼到 Firebase 後台。
                 </p>
-                
                 <div class="text-left text-xs bg-gray-50 p-3 rounded-xl mb-4 text-gray-600 border border-gray-200">
                     <p class="font-bold mb-1">步驟：</p>
                     <ol class="list-decimal list-inside space-y-1 mb-2">
@@ -227,9 +221,7 @@
                         <button @click="copyRules" class="absolute top-1 right-1 bg-white border border-gray-300 rounded px-2 py-0.5 text-[9px] hover:bg-gray-100 text-theme-main">複製</button>
                         {{ rulesText }}
                     </div>
-                    <p class="mt-2 text-[10px] text-gray-400">* 別忘了也要開啟 Authentication > Sign-in method > Anonymous (匿名登入)</p>
                 </div>
-                
                 <button @click="retryConnection" class="w-full py-3 bg-theme-main text-white rounded-xl text-sm font-bold shadow-lg shadow-theme-main/20">設定好了，重試連線</button>
             </div>
         </div>
@@ -303,7 +295,6 @@
                         </div>
                     </div>
 
-                    <!-- Touch Container Listener -->
                     <div class="space-y-5 pb-20" 
                          @touchmove="onTouchDragMove($event)" 
                          @touchend="onTouchDragEnd"
@@ -322,8 +313,6 @@
                             :class="{'ring-1 ring-theme-accent': expandedItemId === item.id, 'dragging': dragIndex === idx}" 
                             @click.stop="toggleExpand(item.id)">
                             
-                            <!-- 專屬拖曳握把 (Sort Handle) -->
-                            <!-- 使用 touchstart.stop 但移除 prevent，允許瀏覽器先判定是否為捲動 -->
                             <div class="sort-handle flex-shrink-0" 
                                  :class="{'active-drag': dragIndex === idx}"
                                  @touchstart.stop="onTouchDragStart($event, idx)" 
@@ -343,7 +332,6 @@
                                             <span class="truncate underline decoration-dotted underline-offset-2">{{ item.location }}</span>
                                         </div>
                                         
-                                        <!-- Note Preview (Visible when collapsed) -->
                                         <div v-if="item.note && expandedItemId !== item.id" class="mt-2 flex items-center text-[11px] text-gray-400 font-sans">
                                             <svg class="w-3 h-3 mr-1.5 text-theme-accent opacity-70 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                             <span class="truncate">{{ item.note }}</span>
@@ -459,7 +447,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: MEMO (Modified: Accordion Style + Structured Shopping List) -->
+                <!-- TAB 3: MEMO -->
                 <div v-if="currentTab === 'memo'" class="p-6 animate-fade-in">
                     <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest border-b pb-4 border-gray-200">備忘錄</h2>
                     <div class="space-y-4">
@@ -471,15 +459,12 @@
                             
                             <div class="flex justify-between items-center">
                                 <h3 class="font-bold text-theme-main text-lg tracking-wider truncate pr-8">{{ note.title || '未命名' }}</h3>
-                                <!-- Expand Icon -->
                                 <div :class="['w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center transition-transform duration-300', expandedNoteId === note.id ? 'rotate-180 bg-theme-accent text-white' : 'text-gray-300']">
                                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
                             </div>
 
-                            <!-- Expanded Content -->
                             <div v-if="expandedNoteId === note.id" class="mt-4 pt-4 border-t border-dashed border-gray-100 animate-fade-in">
-                                <!-- Horizontal Scroll for Note Images -->
                                 <div v-if="note.images && note.images.length > 0" class="mb-4 flex gap-2 overflow-x-auto no-scrollbar pb-2">
                                     <img v-for="(img, i) in note.images" :key="i" :src="img" class="h-32 rounded-lg border border-gray-100 object-cover flex-shrink-0 cursor-zoom-in" @click.stop="viewImage(img)">
                                 </div>
@@ -493,11 +478,10 @@
                         </div>
                     </div>
 
-                    <!-- Shopping List Section (Categorized by Shop) -->
+                    <!-- Shopping List Section -->
                     <div class="mt-10 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-serif font-bold text-theme-main mb-6 tracking-widest">購物清單</h2>
                         
-                        <!-- Add New Shop -->
                         <div class="flex gap-2 mb-6">
                             <input v-model="newShopName" @keyup.enter="addShop" placeholder="新增店家名稱..." class="input-rounded !py-3 !rounded-2xl shadow-sm border border-theme-accent/10 focus:border-theme-accent flex-1 min-w-0">
                             <button @click="addShop" class="bg-theme-main text-white w-12 rounded-2xl shadow-lg shadow-theme-main/20 flex items-center justify-center active:scale-95 transition-transform flex-shrink-0">
@@ -508,14 +492,10 @@
                         <div class="space-y-6 pb-20">
                             <div v-if="shoppingList.length === 0" class="text-center py-4 text-gray-400 text-xs font-serif">尚無購物清單，請先新增店家</div>
                             
-                            <!-- Shop Card -->
                             <div v-for="(shop, sIdx) in shoppingList" :key="shop.id" class="bg-white rounded-3xl shadow-sm border border-transparent hover:border-theme-accent/10 transition-all overflow-hidden">
-                                <!-- Shop Header (Clickable for Expand) -->
                                 <div class="bg-theme-input/50 px-5 py-3 flex justify-between items-center border-b border-gray-100 cursor-pointer" @click="toggleShop(shop)">
                                     <div class="flex items-center gap-3 flex-1">
-                                         <!-- Toggle Icon -->
                                          <svg :class="['w-3 h-3 text-gray-400 transition-transform duration-200', shop.expanded ? 'rotate-180' : '']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                         <!-- Editable Shop Name -->
                                          <div class="flex-1" @click.stop>
                                              <input v-if="shop.isRenaming" v-model="shop.shopName" @blur="saveShopRename(shop)" @keyup.enter="saveShopRename(shop)" ref="shopNameInputs" class="bg-transparent border-b border-theme-accent outline-none font-bold text-theme-main font-serif text-lg w-full">
                                              <div v-else class="flex items-center gap-2">
@@ -531,11 +511,8 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Collapsible Content -->
                                 <div class="p-4" v-show="shop.expanded">
-                                    <!-- Items List -->
                                     <div class="space-y-2 mb-4">
-                                        <!-- Update the v-for loop in shopping list items to correctly iterate shop.tempImages -->
                                         <div v-if="!shop.items || shop.items.length === 0" class="text-center py-2 text-gray-300 text-[10px]">無商品</div>
                                         <div v-for="item in shop.items" :key="item.id" class="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-xl transition-colors">
                                             <div class="flex items-center flex-1 cursor-pointer min-w-0" @click="toggleItem(shop.id, item)">
@@ -543,12 +520,10 @@
                                                     <i v-if="item.done" class="fas fa-check text-white text-[10px]"></i>
                                                 </div>
                                                 
-                                                <!-- Image Thumbnail (Multiple) -->
                                                 <div v-if="item.images && item.images.length > 0" class="flex -space-x-2 mr-3 overflow-hidden">
                                                     <img v-for="(img, imgIdx) in item.images.slice(0, 3)" :key="imgIdx" :src="img" class="thumb-xs bg-gray-100 ring-2 ring-white" @click.stop="viewImage(img)">
                                                     <div v-if="item.images.length > 3" class="thumb-xs bg-gray-100 ring-2 ring-white flex items-center justify-center text-[10px] text-gray-500 font-bold">+{{item.images.length-3}}</div>
                                                 </div>
-                                                <!-- Fallback for old single image -->
                                                 <img v-else-if="item.image" :src="item.image" class="thumb-xs mr-3 bg-gray-100" @click.stop="viewImage(item.image)">
 
                                                 <div class="flex-1 min-w-0 mr-2">
@@ -559,12 +534,10 @@
                                                 </div>
                                             </div>
                                             
-                                            <!-- Link Button (Visible if link exists) -->
                                             <a v-if="item.link" :href="item.link" target="_blank" class="w-8 h-8 flex items-center justify-center text-theme-accent/70 hover:text-theme-accent bg-theme-accent/5 rounded-full mr-1 transition-colors" @click.stop>
                                                 <i class="fas fa-link text-xs"></i>
                                             </a>
 
-                                            <!-- Edit Item Button -->
                                             <button @click.stop="openEditItemModal(shop.id, item)" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-theme-accent rounded-full mr-1 transition-colors opacity-0 group-hover:opacity-100">
                                                 <i class="fas fa-pen text-xs"></i>
                                             </button>
@@ -575,9 +548,7 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Add Item Input Area -->
                                     <div class="mt-3 space-y-2">
-                                        <!-- Row 1: Name + Link Toggle + Note Toggle + Add -->
                                         <div class="flex gap-2">
                                             <input 
                                                 v-model="shop.tempItemInput" 
@@ -606,7 +577,6 @@
                                             >
                                                 <i class="fas fa-camera"></i>
                                             </button>
-                                            <!-- Hidden File Input for Shop Item -->
                                             <input type="file" :ref="'shopFile_' + shop.id" class="hidden" accept="image/*" multiple @change="onShopItemImageChange($event, shop)">
 
                                             <button 
@@ -617,7 +587,6 @@
                                             </button>
                                         </div>
                                         
-                                        <!-- Temp Image Preview in Add Area (Updated for Array) -->
                                         <div v-if="shop.tempImages && shop.tempImages.length > 0" class="flex gap-2 mt-2 overflow-x-auto pb-1 no-scrollbar">
                                             <div v-for="(img, i) in shop.tempImages" :key="i" class="relative inline-block flex-shrink-0">
                                                 <img :src="img" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
@@ -625,7 +594,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Row 2: Link Input (Conditional) -->
                                         <div v-if="shop.showLinkInput" class="animate-fade-in">
                                             <div class="relative">
                                                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs">
@@ -639,7 +607,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Row 3: Note Input (Conditional) -->
                                         <div v-if="shop.showNoteInput" class="animate-fade-in">
                                             <div class="relative">
                                                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs">
@@ -699,6 +666,19 @@
                          </div>
                     </div>
                     
+                    <!-- NEW: Day Selection -->
+                    <div class="flex flex-col gap-1.5">
+                         <label class="input-label justify-center !ml-0"><i class="fas fa-calendar-alt mr-1"></i> Day</label>
+                         <div class="relative">
+                             <select v-model="formItem.dayIndex" class="input-rounded appearance-none text-center font-serif font-bold text-theme-main bg-theme-input">
+                                 <option v-for="(day, index) in days" :value="index">Day {{ index + 1 }} - {{ getDayDate(index) }}</option>
+                             </select>
+                             <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                 <i class="fas fa-chevron-down text-xs"></i>
+                             </div>
+                         </div>
+                    </div>
+
                     <div class="flex flex-col gap-1.5">
                          <label class="input-label justify-center !ml-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Time</label>
                          <div class="flex items-center bg-theme-input rounded-3xl p-2 border border-transparent focus-within:border-theme-accent transition-colors">
@@ -724,7 +704,7 @@
                     <button @click="saveItem" class="w-full py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform mt-4">SAVE EVENT</button>
                 </div>
                 
-                <!-- Expense Form (With Delete) -->
+                <!-- Expense Form -->
                 <div v-if="showExpenseModal" class="space-y-6">
                      <div class="space-y-4">
                          <label class="input-label justify-center !ml-0">ITEM</label>
@@ -806,11 +786,10 @@
                      <button @click="saveTravelers" class="w-full py-4 bg-theme-main text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg mt-2">SAVE CHANGES</button>
                  </div>
 
-                 <!-- Note Form (Modified) -->
+                 <!-- Note Form -->
                  <div v-if="showNoteModal" class="space-y-4">
                      <input v-model="formNote.title" class="w-full bg-transparent border-b border-theme-border p-2 text-xl font-bold font-serif outline-none focus:border-theme-accent transition-colors text-theme-main" placeholder="標題">
                      
-                     <!-- Image Upload for Note (Multiple) -->
                      <div class="flex items-center gap-2">
                          <button @click="triggerFileInput('noteFile')" class="px-4 py-2 bg-gray-50 text-gray-400 rounded-xl text-xs hover:bg-gray-100 flex items-center gap-2">
                              <i class="fas fa-camera"></i> 加入圖片
@@ -818,7 +797,6 @@
                          <input type="file" ref="noteFile" class="hidden" accept="image/*" multiple @change="onNoteImageChange">
                      </div>
                      
-                     <!-- Preview List -->
                      <div v-if="formNote.images && formNote.images.length > 0" class="flex gap-2 overflow-x-auto pb-2">
                          <div v-for="(img, idx) in formNote.images" :key="idx" class="relative flex-shrink-0">
                              <img :src="img" class="h-32 w-32 object-cover rounded-lg border border-gray-200">
@@ -829,20 +807,18 @@
                      <textarea v-model="formNote.content" class="w-full bg-transparent border-none p-2 text-sm h-48 outline-none resize-none leading-relaxed placeholder-gray-300 text-theme-main" placeholder="寫下內容..."></textarea>
                      
                      <div class="flex gap-3 mt-2">
-                         <!-- Delete Button added here -->
                          <button v-if="isNoteEditing" @click="confirmDeleteNote(formNote.id)" class="w-1/3 py-4 bg-white border border-theme-danger/30 text-theme-danger text-xs font-bold tracking-[0.2em] rounded-3xl active:scale-[0.98] transition hover:bg-theme-danger/5">DELETE</button>
                          <button @click="saveNote" :class="[isNoteEditing ? 'w-2/3' : 'w-full', 'py-4 bg-theme-accent text-white text-xs font-bold tracking-[0.2em] rounded-3xl shadow-lg shadow-theme-accent/20 active:scale-[0.98] transition-transform']">SAVE NOTE</button>
                      </div>
                  </div>
 
-                 <!-- Shopping Item Edit Modal (UPDATED) -->
+                 <!-- Shopping Item Edit Modal -->
                  <div v-if="showShoppingEditModal" class="space-y-6">
                      <div class="space-y-4">
                          <label class="input-label justify-center !ml-0">Item Name</label>
                          <input v-model="editForm.text" class="input-rounded rounded-3xl text-center text-lg font-serif border-none bg-theme-input" placeholder="商品名稱">
                      </div>
                      
-                     <!-- Edit Images (Multiple) -->
                      <div class="space-y-2">
                          <label class="input-label justify-center !ml-0">Images</label>
                          <div class="flex flex-col items-center">
@@ -884,7 +860,6 @@
                  <div v-if="showSettingsModal" class="space-y-6">
                      <div><label class="input-label justify-center !ml-0">Destination</label><input v-model="destination" class="input-rounded rounded-2xl text-center"></div>
                      <div><label class="input-label justify-center !ml-0">Currency</label><input v-model="currencySymbol" class="input-rounded rounded-2xl font-mono text-center"></div>
-                     <!-- Backup functions removed as we are now on cloud, but keeping reset -->
                      <button @click="confirmResetData" class="w-full py-2 text-theme-danger text-[10px] tracking-widest opacity-60 hover:opacity-100 rounded-2xl">RESET ALL CLOUD DATA</button>
                  </div>
             </div>
@@ -927,14 +902,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    
-    // 使用一個固定的 ID 來存放此群組的行程。
     const TRIP_DOC_ID = "shared_trip_data"; 
     const tripDocRef = doc(db, "trips", TRIP_DOC_ID);
 
-    // ----------------------------------------------------
-    // 2. Constants & Helpers
-    // ----------------------------------------------------
     const CURRENCY_MAP = {
         'japan': { s: '¥', r: 0.21, n: '日幣' }, 'kyoto': { s: '¥', r: 0.21, n: '日幣' }, 'osaka': { s: '¥', r: 0.21, n: '日幣' }, 'tokyo': { s: '¥', r: 0.21, n: '日幣' },
         'usa': { s: '$', r: 32.5, n: '美金' }, 'europe': { s: '€', r: 35.0, n: '歐元' }, 'uk': { s: '£', r: 41.5, n: '英鎊' }, 'korea': { s: '₩', r: 0.024, n: '韓元' },
@@ -963,13 +933,13 @@
             
             // Notes & Shopping List
             const notes = ref([]); 
-            const shoppingList = ref([]); // Now stores Shops: [{ id, shopName, items: [], expanded: true, tempItemInput: '', tempLinkInput: '', tempNoteInput: '', showLinkInput: false, showNoteInput: false, isRenaming: false, tempImages: [] }]
+            const shoppingList = ref([]); 
             const newShopName = ref('');
             
             // Shopping Edit Modal State
             const showShoppingEditModal = ref(false);
             const editForm = ref({ shopId: null, itemId: null, text: '', link: '', note: '', images: [] });
-            const viewingImage = ref(null); // Full screen viewer
+            const viewingImage = ref(null); 
 
             const exchangeRate = ref(0.21);
             const startDate = ref('');
@@ -986,16 +956,16 @@
             const expandedDates = ref([]); 
             const editingTravelers = ref([]);
 
-            // Cloud Status
             const isSyncing = ref(false);
             const isRemoteUpdate = ref(false); 
-            const permissionError = ref(false); // Track permission errors
-            let unsubscribeSnapshot = null; // To hold the listener unsub function
+            const permissionError = ref(false); 
+            let unsubscribeSnapshot = null; 
 
             // Form Temps
             const tempDestination = ref(''), tempStartDate = ref(''), detectedInfo = ref('');
             const tempHour = ref('09'), tempMinute = ref('00'), tempHourExp = ref('09'), tempMinuteExp = ref('00');
-            const formItem = ref({ id: null, time: '', title: '', location: '', note: '' });
+            // UPDATED: Added dayIndex to formItem
+            const formItem = ref({ id: null, time: '', title: '', location: '', note: '', dayIndex: 0 });
             const formExpense = ref({ id: null, title: '', amount: '', payer: travelers.value[0], beneficiaries: [], type: 'shared', date: '', time: '', note: '' });
             const formNote = ref({ id: null, title: '', content: '', updatedAt: '', images: [] });
             
@@ -1010,7 +980,6 @@ service cloud.firestore {
 
             const instance = getCurrentInstance();
 
-            // Image Compression (Smart Quality Adjustment)
             const compressImage = (file) => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -1018,39 +987,25 @@ service cloud.firestore {
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            
-                            // Increase Max Resolution for better mobile view
-                            // 1600px is a good balance for full-screen mobile viewing
                             const MAX_DIM = 1600; 
                             let width = img.width;
                             let height = img.height;
-                            
                             if (width > height) {
                                 if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
                             } else {
                                 if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; }
                             }
-                            
                             canvas.width = width;
                             canvas.height = height;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
-                            
-                            // Start with high quality (0.9)
                             let quality = 0.9;
                             let dataUrl = canvas.toDataURL('image/jpeg', quality);
-                            
-                            // Check size: Firestore document limit is 1MB.
-                            // Base64 length * 0.75 is approx file size in bytes.
-                            // We target < 900KB safe limit (~1.2M characters) to leave room for text data.
                             const MAX_CHAR_LENGTH = 1200000; 
-                            
-                            // Loop to reduce quality only if necessary
                             while (dataUrl.length > MAX_CHAR_LENGTH && quality > 0.5) {
                                 quality -= 0.1;
                                 dataUrl = canvas.toDataURL('image/jpeg', quality);
                             }
-                            
                             resolve(dataUrl); 
                         };
                         img.src = e.target.result;
@@ -1059,7 +1014,6 @@ service cloud.firestore {
                 });
             };
 
-            // Computed
             const currentDayItems = computed(() => days.value[currentDayIndex.value]?.items || []);
             const totalExpense = computed(() => expenses.value.reduce((sum, exp) => sum + Number(exp.amount), 0));
             
@@ -1082,7 +1036,6 @@ service cloud.firestore {
                 return stats;
             });
 
-            // UI Toggles
             const toggleExpand = (id) => expandedItemId.value = expandedItemId.value === id ? null : id;
             const toggleExpandNote = (id) => expandedNoteId.value = expandedNoteId.value === id ? null : id; 
             const toggleDateGroup = (date) => {
@@ -1093,7 +1046,6 @@ service cloud.firestore {
             const showMemberStats = ref(true); 
             const collapsedDates = ref([]);
 
-            // Drag & Drop
             const dragState = ref({ isDown: false, startX: 0, scrollLeft: 0 });
             const dragIndex = ref(null);
             const dateContainer = ref(null);
@@ -1201,10 +1153,6 @@ service cloud.firestore {
                 if (!detectedInfo.value) detectCurrency(); 
             };
             
-            // ----------------------------------------------------
-            // 3. Firebase Data Persistence Logic
-            // ----------------------------------------------------
-            
             const saveToCloud = debounce(async () => {
                 if (isRemoteUpdate.value) return;
 
@@ -1256,13 +1204,11 @@ service cloud.firestore {
                         days.value = d.days || [{items:[]}]; 
                         expenses.value = (d.expenses||[]).map(e => ({...e, beneficiaries: e.beneficiaries || [], type: e.type || 'shared'})); 
                         
-                        // Parse Notes: Migration Logic for Images Array
                         notes.value = (d.notes || []).map(n => ({
                             ...n,
                             images: n.images || (n.image ? [n.image] : [])
                         }));
                         
-                        // Load Shopping List with State Preservation & Migration
                         const currentShops = shoppingList.value.reduce((acc, shop) => {
                             acc[shop.id] = shop;
                             return acc;
@@ -1271,7 +1217,6 @@ service cloud.firestore {
                         let rawShopping = d.shoppingList || [];
                         
                         if (rawShopping.length > 0 && !rawShopping[0].items && !rawShopping[0].shopName) {
-                             // Old flat list migration
                              shoppingList.value = [{
                                  id: 'default_migrated',
                                  shopName: '未分類項目',
@@ -1293,7 +1238,7 @@ service cloud.firestore {
                                      tempItemInput: local ? local.tempItemInput : '', 
                                      tempLinkInput: local ? local.tempLinkInput : '',
                                      tempNoteInput: local ? local.tempNoteInput : '',
-                                     tempImages: local ? local.tempImages : [], // Preserve temp images
+                                     tempImages: local ? local.tempImages : [], 
                                      showLinkInput: local ? local.showLinkInput : false,
                                      showNoteInput: local ? local.showNoteInput : false,
                                      isRenaming: local ? local.isRenaming : false
@@ -1358,13 +1303,9 @@ service cloud.firestore {
                 setTimeout(() => isRemoteUpdate.value = false, 1000);
             });
 
-            // Image Handlers
             const triggerFileInput = (refName) => {
-                // instance.refs is a proxy object to elements/components
-                // We access instance.refs to find the file input
                 const element = instance.refs[refName];
                 if (element) {
-                     // If v-for used, it might be an array
                      if (Array.isArray(element)) {
                          element[0].click();
                      } else {
@@ -1416,7 +1357,14 @@ service cloud.firestore {
             const confirmDeleteExpense = (id) => triggerConfirm('刪除', '確定刪除？', () => { expenses.value = expenses.value.filter(e => e.id !== id); showExpenseModal.value = false; });
             const confirmDeleteNote = (id) => triggerConfirm('刪除', '確定刪除？', () => { notes.value = notes.value.filter(n => n.id !== id); showNoteModal.value = false; });
             const onFabClick = () => {
-                if(currentTab.value === 'schedule') { formItem.value = { id: Date.now(), time: '09:00', title: '', location: '', note: '' }; tempHour.value='09'; tempMinute.value='00'; isEditing.value = false; showItemModal.value = true; }
+                if(currentTab.value === 'schedule') { 
+                    // UPDATED: Initialize with currentDayIndex
+                    formItem.value = { id: Date.now(), time: '09:00', title: '', location: '', note: '', dayIndex: currentDayIndex.value }; 
+                    tempHour.value='09'; 
+                    tempMinute.value='00'; 
+                    isEditing.value = false; 
+                    showItemModal.value = true; 
+                }
                 if(currentTab.value === 'money') { 
                     const now = new Date();
                     const dateStr = now.toISOString().split('T')[0];
@@ -1431,14 +1379,35 @@ service cloud.firestore {
                 if(currentTab.value === 'memo') { formNote.value = { id: Date.now(), title: '', content: '', images: [] }; isNoteEditing.value = false; showNoteModal.value = true; }
             };
 
+            // UPDATED: Save Item Logic to handle Day Change
             const saveItem = () => {
                 if(!formItem.value.title) return showToast('請輸入名稱');
+                
+                const targetDayIdx = parseInt(formItem.value.dayIndex);
+                const originDayIdx = currentDayIndex.value;
                 const newItem = { ...formItem.value, time: `${tempHour.value}:${tempMinute.value}` };
-                const items = days.value[currentDayIndex.value].items;
+                delete newItem.dayIndex; // Cleanup temp prop
+
                 if(isEditing.value) { 
-                    const idx = items.findIndex(i => i.id === formItem.value.id);
-                    if (idx !== -1) items.splice(idx, 1, newItem);
-                } else { items.push(newItem); }
+                    // Move item logic
+                    if (targetDayIdx === originDayIdx) {
+                        const items = days.value[originDayIdx].items;
+                        const idx = items.findIndex(i => i.id === formItem.value.id);
+                        if (idx !== -1) items.splice(idx, 1, newItem);
+                    } else {
+                        // Different day
+                        days.value[originDayIdx].items = days.value[originDayIdx].items.filter(i => i.id !== formItem.value.id);
+                        if (!days.value[targetDayIdx]) days.value[targetDayIdx] = { items: [] }; // Safety check
+                        days.value[targetDayIdx].items.push(newItem);
+                        days.value[targetDayIdx].items.sort((a, b) => a.time.localeCompare(b.time));
+                        showToast(`Moved to Day ${targetDayIdx + 1}`);
+                    }
+                } else { 
+                    // Add new item
+                    if (!days.value[targetDayIdx]) days.value[targetDayIdx] = { items: [] };
+                    days.value[targetDayIdx].items.push(newItem);
+                    days.value[targetDayIdx].items.sort((a, b) => a.time.localeCompare(b.time));
+                }
                 showItemModal.value = false;
             };
             
@@ -1492,7 +1461,7 @@ service cloud.firestore {
 
             const toggleShop = (shop) => { if (!shop.isRenaming) shop.expanded = !shop.expanded; };
             const removeShop = (id) => triggerConfirm('刪除店家', '確定刪除此店家及其所有商品？', () => { shoppingList.value = shoppingList.value.filter(s => s.id !== id); });
-            const enableShopRename = (shop) => { shop.isRenaming = true; nextTick(() => { /* Focus logic if needed */ }); };
+            const enableShopRename = (shop) => { shop.isRenaming = true; nextTick(() => { }); };
             const saveShopRename = (shop) => { if (!shop.shopName.trim()) shop.shopName = "未命名店家"; shop.isRenaming = false; };
             
             const addItemToShop = (shop) => {
@@ -1505,7 +1474,6 @@ service cloud.firestore {
                     images: shop.tempImages || [],
                     done: false
                 });
-                // Reset inputs
                 shop.tempItemInput = ''; shop.tempLinkInput = ''; shop.tempNoteInput = ''; shop.tempImages = [];
                 shop.showLinkInput = false; shop.showNoteInput = false;
             };
@@ -1532,7 +1500,13 @@ service cloud.firestore {
             const removeItem = (shopId, itemId) => { const shop = shoppingList.value.find(s => s.id === shopId); if (shop) shop.items = shop.items.filter(i => i.id !== itemId); };
             const toggleItem = (shopId, item) => { item.done = !item.done; };
             
-            const editItem = (item) => { formItem.value = {...item}; [tempHour.value, tempMinute.value] = item.time.split(':'); isEditing.value=true; showItemModal.value=true; };
+            // UPDATED: Edit Item Init Logic
+            const editItem = (item) => { 
+                formItem.value = {...item, dayIndex: currentDayIndex.value}; 
+                [tempHour.value, tempMinute.value] = item.time.split(':'); 
+                isEditing.value=true; 
+                showItemModal.value=true; 
+            };
             const editExpense = (exp) => { formExpense.value = {...exp}; if (!formExpense.value.beneficiaries) formExpense.value.beneficiaries = []; if(exp.time) [tempHourExp.value, tempMinuteExp.value] = exp.time.split(':'); isExpenseEditing.value=true; showExpenseModal.value=true; };
             const editNote = (note) => { formNote.value = {...note}; isNoteEditing.value=true; showNoteModal.value=true; };
             const closeAllModals = () => { showItemModal.value = false; showExpenseModal.value = false; showNoteModal.value = false; showSettingsModal.value = false; showTravelerModal.value = false; showShoppingEditModal.value = false; };
@@ -1628,13 +1602,13 @@ service cloud.firestore {
                 toggleExpand, expandedItemId, isEditing, isExpenseEditing, isNoteEditing,
                 onTouchDragStart, onTouchDragMove, onTouchDragEnd, dragIndex, dateContainer, onDateDragStart, onDateDragMove, onDateDragEnd, getMemberDetails, statistics, debts, toggleBeneficiary, groupedExpenses, tempHourExp, tempMinuteExp, showMemberStats, collapsedDates, toggleDateGroup,
                 showTravelerModal, openTravelerModal, editingTravelers, addTraveler, removeTraveler, saveTravelers,
-                isSyncing, permissionError, retryConnection, rulesText, copyRules, // New
-                expandedNoteId, toggleExpandNote, // New for Memo Accordion
-                onMouseDragStart, onMouseDragMove, onMouseDragEnd, // New for Desktop Drag
-                shoppingList, newShopName, addShop, removeShop, addItemToShop, removeItem, toggleItem, toggleShop, // New for Shopping List
-                enableShopRename, saveShopRename, // Shop rename
-                showShoppingEditModal, editForm, openEditItemModal, saveEditItem, // Shopping item edit
-                onNoteImageChange, onShopItemImageChange, onEditItemImageChange, viewingImage, viewImage, triggerFileInput // New Image Handlers
+                isSyncing, permissionError, retryConnection, rulesText, copyRules, 
+                expandedNoteId, toggleExpandNote, 
+                onMouseDragStart, onMouseDragMove, onMouseDragEnd, 
+                shoppingList, newShopName, addShop, removeShop, addItemToShop, removeItem, toggleItem, toggleShop, 
+                enableShopRename, saveShopRename, 
+                showShoppingEditModal, editForm, openEditItemModal, saveEditItem, 
+                onNoteImageChange, onShopItemImageChange, onEditItemImageChange, viewingImage, viewImage, triggerFileInput
             };
         }
     }).mount('#app');
